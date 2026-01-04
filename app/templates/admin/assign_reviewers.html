@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Assign Reviewers{% endblock %}
+{% block content %}
+<h2>Assign Reviewers for "{{ application.scholarship.title }}"</h2>
+<p><strong>Student:</strong> {{ application.student.username }}</p>
+<p><strong>Submitted At:</strong> {{ application.submitted_at.strftime('%Y-%m-%d') }}</p>
+<p><strong>Documents:</strong></p>
+<ul>
+    {% for doc in application.documents.split(',') %}
+    <li><a href="{{ url_for('static', filename=doc.split('static/')[1]) }}" target="_blank">{{ doc.split('/')[-1] }}</a></li>
+    {% endfor %}
+</ul>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.reviewers.label(class="form-label") }}
+        {{ form.reviewers(class="form-select", multiple=True, size=5) }}
+    </div>
+    <button type="submit" class="btn btn-success">Assign Reviewers</button>
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Back</a>
+</form>
+{% endblock %}
