@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.models import db, User
+from app.models import User
+from app.extensions import db
 from app.forms import RegistrationForm, LoginForm
 
-auth_bp = Blueprint('auth', __name__, template_folder='templates/auth')
+auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/register', methods=['GET','POST'])
 def register():
@@ -17,7 +18,8 @@ def register():
         db.session.commit()
         flash("Account created successfully!", "success")
         return redirect(url_for('auth.login'))
-    return render_template('register.html', form=form)
+    return render_template('auth/register.html', form=form)
+
 
 @auth_bp.route('/login', methods=['GET','POST'])
 def login():
@@ -26,9 +28,19 @@ def login():
         user = User.query.filter_by(email=form.email.data).first()
         if user and check_password_hash(user.password, form.password.data):
             login_user(user)
-            return redirect(url_for('student.dashboard') if user.role=='student' else url_for('admin.dashboard'))
+            if user.role == 'student':
+                return redirect(url_for('student.dashboard'))
+            elif user.role == 'reviewer':
+                return redirect(url_for('reviewer.dashboard'))
+            elif user.role == 'committee':
+                return redirect(url_for('committee.dashboard'))
+            elif user.role == 'admin':
+                return redirect(url_for('admin.dashboard'))
+            else:
+                return redirect(url_for('auth.login'))
         flash("Invalid credentials", "danger")
-    return render_template('login.html', form=form)
+    return render_template('auth/login.html', form=form)
+
 
 @auth_bp.route('/logout')
 @login_required
@@ -36,3 +48,4 @@ def logout():
     logout_user()
     flash("Logged out", "info")
     return redirect(url_for('auth.login'))
+

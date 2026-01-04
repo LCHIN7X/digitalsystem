@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Create Scholarship{% endblock %}
+{% block content %}
+<h2>Create New Scholarship</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.title.label(class="form-label") }}
+        {{ form.title(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.description.label(class="form-label") }}
+        {{ form.description(class="form-control", rows="4") }}
+    </div>
+    <div class="mb-3">
+        {{ form.eligibility_criteria.label(class="form-label") }}
+        {{ form.eligibility_criteria(class="form-control", rows="3") }}
+    </div>
+    <div class="mb-3">
+        {{ form.documents_required.label(class="form-label") }}
+        {{ form.documents_required(class="form-control") }}
+        <small class="form-text text-muted">Comma-separated document names (e.g., transcript, essay)</small>
+    </div>
+    <div class="mb-3">
+        {{ form.application_deadline.label(class="form-label") }}
+        {{ form.application_deadline(class="form-control") }}
+    </div>
+    <button type="submit" class="btn btn-success">Create Scholarship</button>
+</form>
+{% endblock %}

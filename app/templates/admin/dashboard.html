@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<h2>Admin Dashboard</h2>
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Applications</h5>
+                <p class="card-text fs-3">{{ total_apps }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Scholarships</h5>
+                <p class="card-text fs-3">{{ total_scholarships }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+<a href="{{ url_for('admin.create_scholarship') }}" class="btn btn-primary mb-3">Create Scholarship</a>
+<a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary mb-3">Manage Users</a>
+<a href="{{ url_for('admin.assign_reviewers', application_id=app.id) }}" class="btn btn-sm btn-primary">Assign Reviewers</a>
+
+{% endblock %}
