@@ -9,7 +9,7 @@ reviewer_bp = Blueprint('reviewer', __name__, template_folder='templates/reviewe
 def dashboard():
     reviews = Application.query.join(Review, Application.id==Review.application_id)\
                 .filter(Review.reviewer_id==current_user.id).all()
-    return render_template('dashboard.html', applications=reviews)
+    return render_template('reviewer/dashboard.html', applications=reviews)
 
 @reviewer_bp.route('/review/<int:application_id>', methods=['GET','POST'])
 @login_required

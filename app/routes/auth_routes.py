@@ -14,7 +14,7 @@ def register():
         email = request.form.get("email")
         username = request.form.get("username")
         your_id = request.form.get("your_id")
-        role = request.form.get("role")  # <- get selected role
+        role = request.form.get("role")  
         password1 = request.form.get("password1")
         password2 = request.form.get("password2")
 
@@ -29,7 +29,7 @@ def register():
             username=username,
             your_id=your_id,
             password=hashed_password,
-            role=role  # <- save role in database
+            role=role  
         )
 
         try:
