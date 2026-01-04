@@ -1,7 +1,8 @@
 from flask import Flask
+from app.models import User
+
 from app.extensions import db, login_manager
 
-# Import blueprints
 from app.routes.auth_routes import auth_bp
 from app.routes.student_routes import student_bp
 from app.routes.reviewer_routes import reviewer_bp
@@ -9,29 +10,24 @@ from app.routes.committee_routes import committee_bp
 from app.routes.admin_routes import admin_bp
 
 def create_app():
-    # Create Flask app
+    
     app = Flask(__name__, template_folder='app/templates')
-    app.config['SECRET_KEY'] = 'your-secret-key'
+    app.config['SECRET_KEY'] = 'digital-system'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scholarship.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Initialize extensions
+    
     db.init_app(app)
-    login_manager.login_view = 'auth.login'
+    login_manager.init_app(app)
+   
 
-    # ----------------------
-    # User loader for Flask-Login
-    # ----------------------
     @login_manager.user_loader
     def load_user(user_id):
-        from app.models import User  # import inside function to avoid circular imports
-        return db.session.get(User, int(user_id))
+        return User.query.get(int(user_id))
 
-    # ----------------------
-    # Register blueprints
-    # ----------------------
+  
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    # Uncomment and register other blueprints when ready
+
     app.register_blueprint(student_bp, url_prefix='/student')
     app.register_blueprint(reviewer_bp, url_prefix='/reviewer')
     app.register_blueprint(committee_bp, url_prefix='/committee')
