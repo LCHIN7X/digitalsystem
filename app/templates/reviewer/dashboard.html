@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Reviewer Dashboard{% endblock %}
+{% block content %}
+<h2>Your Assigned Applications</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Student</th>
+            <th>Scholarship</th>
+            <th>Submitted At</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for app in applications %}
+        <tr>
+            <td>{{ app.student.username }}</td>
+            <td>{{ app.scholarship.title }}</td>
+            <td>{{ app.submitted_at.strftime('%Y-%m-%d') }}</td>
+            <td><a href="{{ url_for('reviewer.review_application', application_id=app.id) }}" class="btn btn-primary btn-sm">Review</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
