@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from app.models import db, Scholarship, Application
+from app.models import Scholarship, Application
+from app.extensions import db
 import os
 
 student_bp = Blueprint('student', __name__, template_folder='templates/student')
@@ -9,7 +10,7 @@ student_bp = Blueprint('student', __name__, template_folder='templates/student')
 @login_required
 def dashboard():
     apps = Application.query.filter_by(student_id=current_user.id).all()
-    return render_template('dashboard.html', applications=apps)
+    return render_template('student/dashboard.html', applications=apps)
 
 @student_bp.route('/scholarships')
 @login_required

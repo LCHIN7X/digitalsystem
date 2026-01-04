@@ -1,5 +1,6 @@
 from flask import render_template, redirect, url_for, flash, request,Blueprint
 from flask_login import login_required
+
 from app.models import db, Scholarship,User,Application,Review
 from app.forms import ScholarshipForm
 

@@ -3,11 +3,10 @@ from app.extensions import db, login_manager
 
 # Import blueprints
 from app.routes.auth_routes import auth_bp
-# You can import other blueprints when ready:
-# from app.routes.student_routes import student_bp
-# from app.routes.reviewer_routes import reviewer_bp
-# from app.routes.committee_routes import committee_bp
-# from app.routes.admin_routes import admin_bp
+from app.routes.student_routes import student_bp
+from app.routes.reviewer_routes import reviewer_bp
+from app.routes.committee_routes import committee_bp
+from app.routes.admin_routes import admin_bp
 
 def create_app():
     # Create Flask app
@@ -18,7 +17,7 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
-    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
 
     # ----------------------
     # User loader for Flask-Login
@@ -33,10 +32,10 @@ def create_app():
     # ----------------------
     app.register_blueprint(auth_bp, url_prefix='/auth')
     # Uncomment and register other blueprints when ready
-    # app.register_blueprint(student_bp, url_prefix='/student')
-    # app.register_blueprint(reviewer_bp, url_prefix='/reviewer')
-    # app.register_blueprint(committee_bp, url_prefix='/committee')
-    # app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(student_bp, url_prefix='/student')
+    app.register_blueprint(reviewer_bp, url_prefix='/reviewer')
+    app.register_blueprint(committee_bp, url_prefix='/committee')
+    app.register_blueprint(admin_bp, url_prefix='/admin')
 
     # ----------------------
     # Create database tables
