@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Apply for {{ scholarship.title }}{% endblock %}
+{% block content %}
+<h2>Apply for {{ scholarship.title }}</h2>
+<p>{{ scholarship.description }}</p>
+<p><strong>Eligibility:</strong> {{ scholarship.eligibility_criteria }}</p>
+<form method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label class="form-label">Upload Documents</label>
+        <input type="file" name="documents" class="form-control" multiple required>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit Application</button>
+</form>
+{% endblock %}
