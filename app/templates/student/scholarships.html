@@ -19,13 +19,25 @@
         <tr>
             <td><strong>{{ scholarship.title }}</strong></td>
             <td>{{ scholarship.description }}</td>
-            <td style="white-space: pre-line;">
-                {% if scholarship.eligibility_criteria %}
-                    {{ scholarship.eligibility_criteria }}
-                {% else %}
-                    N/A
-                {% endif %}
-            </td>
+            <td>
+    <ul>
+        {% if scholarship.eligibility_criteria.min_cgpa %}
+            <li>Minimum CGPA: {{ scholarship.eligibility_criteria.min_cgpa }}</li>
+        {% endif %}
+        {% if scholarship.eligibility_criteria.max_income %}
+            <li>Maximum Household Income: RM{{ scholarship.eligibility_criteria.max_income }}</li>
+        {% endif %}
+        {% if scholarship.eligibility_criteria.excluded_programmes %}
+            <li>Excluded Programmes: {{ scholarship.eligibility_criteria.excluded_programmes | join(', ') }}</li>
+        {% endif %}
+        {% if scholarship.eligibility_criteria.required_criteria %}
+            {% for item in scholarship.eligibility_criteria.required_criteria %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        {% endif %}
+    </ul>
+</td>
+
             <td>&nbsp;
                 {% if scholarship.application_deadline %}
                     {{ scholarship.application_deadline.strftime('%d %b %Y') }}
