@@ -16,26 +16,86 @@ def dashboard():
 @login_required
 def scholarships():
     scholarships = Scholarship.query.all()
-    return render_template('scholarships.html', scholarships=scholarships)
+    return render_template('student/scholarships.html', scholarships=scholarships)
 
 @student_bp.route('/apply/<int:scholarship_id>', methods=['GET','POST'])
 @login_required
 def apply(scholarship_id):
     scholarship = Scholarship.query.get_or_404(scholarship_id)
+
+    UPLOAD_FOLDER = os.path.join('app', 'static', 'uploads')
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
     if request.method == 'POST':
-        files = request.files.getlist('documents')
-        saved_files = []
-        for f in files:
-            filepath = os.path.join('app/static/uploads', f.filename)
-            f.save(filepath)
-            saved_files.append(filepath)
-        app_entry = Application(student_id=current_user.id, scholarship_id=scholarship.id, 
-                                documents=",".join(saved_files))
-        db.session.add(app_entry)
+        # 1️⃣ Save uploaded files
+        files_to_save = []
+
+        # Passport photo
+        photo = request.files.get('photo')
+        if photo:
+            photo_path = os.path.join('app/static/uploads', photo.filename)
+            photo.save(photo_path)
+            files_to_save.append(photo_path)
+
+        # Academic document
+        academic_doc = request.files.get('academic_doc')
+        if academic_doc:
+            doc_path = os.path.join('app/static/uploads', academic_doc.filename)
+            academic_doc.save(doc_path)
+            files_to_save.append(doc_path)
+
+        # 2️⃣ Collect all form fields into a dictionary
+        application_data = {
+            "full_name": request.form.get('full_name'),
+            "address": request.form.get('address'),
+            "ic_number": request.form.get('ic_number'),
+            "dob": request.form.get('dob'),
+            "age": request.form.get('age'),
+            "intake": request.form.get('intake'),
+            "programme": request.form.get('programme'),
+            "course": request.form.get('course'),
+            "nationality": request.form.get('nationality'),
+            "race": request.form.get('race'),
+            "sex": request.form.get('sex'),
+            "contact": request.form.get('contact'),
+            "home_contact": request.form.get('home_contact'),
+            "household_income": request.form.get('household_income'),
+            "email": request.form.get('email'),
+            "family_name": request.form.getlist('family_name[]'),
+            "relationship": request.form.getlist('relationship[]'),
+            "family_age": request.form.getlist('family_age[]'),
+            "occupation": request.form.getlist('occupation[]'),
+            "family_income": request.form.getlist('family_income[]'),
+            "school_name": request.form.get('school_name'),
+            "qualification": request.form.get('qualification'),
+            "activity_type": request.form.getlist('activity_type[]'),
+            "level": request.form.getlist('level[]'),
+            "year": request.form.getlist('year[]'),
+            "achievement": request.form.getlist('achievement[]'),
+            "statement": request.form.get('statement')
+        }
+
+        # 3️⃣ Save to database
+        new_application = Application(
+            student_id=current_user.id,
+            scholarship_id=scholarship.id,
+            documents=",".join(files_to_save),
+            status="Pending"
+        )
+
+        # Optional: Save all form data as JSON inside documents or another column
+        # You can add a new column `form_data = db.Column(db.JSON)` to Application model
+        # new_application.form_data = application_data
+
+        db.session.add(new_application)
         db.session.commit()
-        flash("Application submitted!", "success")
+
+        flash("Your application has been submitted!", "success")
         return redirect(url_for('student.dashboard'))
-    return render_template('apply.html', scholarship=scholarship)
+
+    # GET request: show form
+    return render_template('student/apply.html', scholarship=scholarship)
+
 
 @student_bp.route('/profile', methods=['GET','POST'])
 @login_required

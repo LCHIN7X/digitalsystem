@@ -1,5 +1,6 @@
 from app.extensions import db
 from flask_login import UserMixin
+from sqlalchemy.dialects.sqlite import JSON
 
 from datetime import datetime
 
@@ -18,19 +19,11 @@ class Scholarship(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    eligibility_criteria = db.Column(db.Text)
+    eligibility_criteria = db.Column(db.JSON)
     application_deadline = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     documents_required = db.Column(db.Text)  # comma-separated list
 
-class Application(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    scholarship_id = db.Column(db.Integer, db.ForeignKey('scholarship.id'), nullable=False)
-    documents = db.Column(db.Text)  # store file paths comma-separated
-    status = db.Column(db.String(50), default="Pending")  # Pending, Reviewed, Accepted, Rejected
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
-    reviews = db.relationship('Review', backref='application', lazy=True)
 
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -39,3 +32,18 @@ class Review(db.Model):
     score = db.Column(db.Float)
     comments = db.Column(db.Text)
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Application(db.Model):
+    __tablename__ = 'application'
+    __table_args__ = {'extend_existing': True}  # <-- ADD THIS
+
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    scholarship_id = db.Column(db.Integer, db.ForeignKey('scholarship.id'), nullable=False)
+    documents = db.Column(db.Text)  # store file paths comma-separated
+    status = db.Column(db.String(50), default="Pending")  # Pending, Reviewed, Accepted, Rejected
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    reviews = db.relationship('Review', backref='application', lazy=True)
+
+    scholarship = db.relationship('Scholarship', backref='applications')
+
