@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Available Scholarships{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Available Scholarships</h2>
+
+<table class="table table-bordered table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>Name</th>
+            <th>Details</th>
+            <th>Requirements</th>
+            <th>Deadline</th>  <!-- New column -->
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for scholarship in scholarships %}
+        <tr>
+            <td><strong>{{ scholarship.title }}</strong></td>
+            <td>{{ scholarship.description }}</td>
+            <td>
+    <ul>
+        {% if scholarship.eligibility_criteria.min_cgpa %}
+            <li>Minimum CGPA: {{ scholarship.eligibility_criteria.min_cgpa }}</li>
+        {% endif %}
+        {% if scholarship.eligibility_criteria.max_income %}
+            <li>Maximum Household Income: RM{{ scholarship.eligibility_criteria.max_income }}</li>
+        {% endif %}
+        {% if scholarship.eligibility_criteria.excluded_programmes %}
+            <li>Excluded Programmes: {{ scholarship.eligibility_criteria.excluded_programmes | join(', ') }}</li>
+        {% endif %}
+        {% if scholarship.eligibility_criteria.required_criteria %}
+            {% for item in scholarship.eligibility_criteria.required_criteria %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        {% endif %}
+    </ul>
+</td>
+
+            <td>&nbsp;
+                {% if scholarship.application_deadline %}
+                    {{ scholarship.application_deadline.strftime('%d %b %Y') }}
+                {% else %}
+                    N/A
+                {% endif %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            </td>
+            <td>
+                <a href="{{ url_for('student.apply', scholarship_id=scholarship.id) }}" class="btn btn-success btn-sm">
+                    Apply
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
