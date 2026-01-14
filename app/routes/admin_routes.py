@@ -1,22 +1,69 @@
-from flask import render_template, redirect, url_for, flash, request,Blueprint
-from flask_login import login_required
+from flask import render_template, redirect, url_for, flash, request, Blueprint
+from flask_login import login_required, login_user, current_user
+from werkzeug.security import check_password_hash, generate_password_hash
 
-from app.models import db, Scholarship,User,Application,Review
-from app.forms import ScholarshipForm
+from app.models import db, Scholarship, User, Application, Review
+from app.forms import ScholarshipForm, RegistrationForm, AssignReviewersForm
 
-admin_bp = Blueprint('admin', __name__, template_folder='templates/admin')
+admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+
+# =========================
+# ADMIN LOGIN (USERNAME)
+# =========================
+@admin_bp.route('/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+
+        user = User.query.filter_by(username=username).first()
+
+        if not user or user.role != 'admin':
+            flash("Admin account not found.", "danger")
+            return redirect(url_for('admin.admin_login'))
+
+        if not check_password_hash(user.password, password):
+            flash("Incorrect password.", "danger")
+            return redirect(url_for('admin.admin_login'))
+
+        login_user(user)
+        flash("Welcome Admin!", "success")
+        return redirect(url_for('admin.dashboard'))
+
+    return render_template('admin/login.html')
+
+
+# =========================
+# ADMIN DASHBOARD
+# =========================
 @admin_bp.route('/dashboard')
 @login_required
 def dashboard():
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('auth.login'))
+
     total_apps = Application.query.count()
     total_scholarships = Scholarship.query.count()
-    return render_template('dashboard.html', total_apps=total_apps, total_scholarships=total_scholarships)
+
+    return render_template(
+        'admin/dashboard.html',
+        total_apps=total_apps,
+        total_scholarships=total_scholarships
+    )
 
 
+# =========================
+# CREATE SCHOLARSHIP
+# =========================
 @admin_bp.route('/create_scholarship', methods=['GET', 'POST'])
 @login_required
 def create_scholarship():
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('auth.login'))
+
     form = ScholarshipForm()
     if form.validate_on_submit():
         scholarship = Scholarship(
@@ -30,61 +77,19 @@ def create_scholarship():
         db.session.commit()
         flash("Scholarship created successfully!", "success")
         return redirect(url_for('admin.dashboard'))
+
     return render_template('admin/create_scholarship.html', form=form)
 
+
+# =========================
+# MANAGE USERS
+# =========================
 @admin_bp.route('/manage_users')
 @login_required
 def manage_users():
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('auth.login'))
+
     users = User.query.all()
     return render_template('admin/manage_users.html', users=users)
-
-
-@admin_bp.route('/edit_user/<int:user_id>', methods=['GET','POST'])
-@login_required
-def edit_user(user_id):
-    user = User.query.get_or_404(user_id)
-    form = RegistrationForm(obj=user)
-    if form.validate_on_submit():
-        user.username = form.username.data
-        user.email = form.email.data
-        if form.password.data:
-            user.password = generate_password_hash(form.password.data)
-        user.role = form.role.data
-        db.session.commit()
-        flash("User updated!", "success")
-        return redirect(url_for('admin.manage_users'))
-    return render_template('auth/register.html', form=form)
-
-@admin_bp.route('/delete_user/<int:user_id>')
-@login_required
-def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
-    db.session.delete(user)
-    db.session.commit()
-    flash("User deleted!", "info")
-    return redirect(url_for('admin.manage_users'))
-
-
-@admin_bp.route('/assign_reviewers/<int:application_id>', methods=['GET', 'POST'])
-@login_required
-def assign_reviewers(application_id):
-    application = Application.query.get_or_404(application_id)
-    
-    # Get all users with reviewer role
-    reviewers = User.query.filter_by(role='reviewer').all()
-    form = AssignReviewersForm()
-    form.reviewers.choices = [(r.id, r.username) for r in reviewers]
-
-    if form.validate_on_submit():
-        selected_reviewers = form.reviewers.data  # list of reviewer IDs
-        for reviewer_id in selected_reviewers:
-            # Check if already assigned
-            existing_review = Review.query.filter_by(application_id=application.id, reviewer_id=reviewer_id).first()
-            if not existing_review:
-                review = Review(application_id=application.id, reviewer_id=reviewer_id)
-                db.session.add(review)
-        db.session.commit()
-        flash("Reviewers assigned successfully!", "success")
-        return redirect(url_for('admin.dashboard'))
-    
-    return render_template('admin/assign_reviewers.html', application=application, form=form)
