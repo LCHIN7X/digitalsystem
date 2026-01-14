@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Review Application{% endblock %}
+{% block content %}
+<h2>Review: {{ application.scholarship.title }}</h2>
+<p><strong>Student:</strong> {{ application.student.username }}</p>
+<p><strong>Documents:</strong></p>
+<ul>
+    {% for doc in application.documents.split(',') %}
+    <li><a href="{{ url_for('static', filename=doc.split('static/')[1]) }}" target="_blank">{{ doc.split('/')[-1] }}</a></li>
+    {% endfor %}
+</ul>
+<form method="POST">
+    <div class="mb-3">
+        <label class="form-label">Score (0-100)</label>
+        <input type="number" name="score" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Comments</label>
+        <textarea name="comments" class="form-control" rows="4" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-success">Submit Review</button>
+</form>
+{% endblock %}

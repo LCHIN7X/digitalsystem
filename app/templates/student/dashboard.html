@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard{% endblock %}
+{% block content %}
+<h2>Welcome, {{ current_user.username }}</h2>
+<a href="{{ url_for('student.scholarships') }}" class="btn btn-primary mb-3">Browse Scholarships</a>
+<h4>Your Applications</h4>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Scholarship</th>
+            <th>Status</th>
+            <th>Submitted At</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for app in applications %}
+        <tr>
+            <td>{{ app.scholarship.title }}</td>
+            <td>{{ app.status }}</td>
+            <td>{{ app.submitted_at.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
