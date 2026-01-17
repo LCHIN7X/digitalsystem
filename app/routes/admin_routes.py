@@ -1,9 +1,14 @@
 from flask import render_template, redirect, url_for, flash, request, Blueprint
 from flask_login import login_required, login_user, current_user
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import check_password_hash
 
 from app.models import db, Scholarship, User, Application, Review
-from app.forms import ScholarshipForm, RegistrationForm, AssignReviewersForm
+from app.forms import (
+    ScholarshipForm,
+    RegistrationForm,
+    AssignReviewersForm,
+    ApplicationStatusForm
+)
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -82,7 +87,7 @@ def create_scholarship():
 
 
 # =========================
-# MANAGE USERS
+# MANAGE USERS (VIEW ONLY)
 # =========================
 @admin_bp.route('/manage_users')
 @login_required
@@ -93,3 +98,94 @@ def manage_users():
 
     users = User.query.all()
     return render_template('admin/manage_users.html', users=users)
+
+
+# =========================
+# MANAGE APPLICATION STAGES
+# =========================
+@admin_bp.route('/applications')
+@login_required
+def manage_applications():
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('auth.login'))
+
+    applications = Application.query.order_by(Application.id.desc()).all()
+
+    forms = {}
+    for a in applications:
+        f = ApplicationStatusForm()
+        f.status.data = a.status if hasattr(a, "status") and a.status else "Submitted"
+        forms[a.id] = f
+
+    return render_template(
+        'admin/manage_applications.html',
+        applications=applications,
+        forms=forms
+    )
+
+
+@admin_bp.route('/applications/<int:application_id>/status', methods=['POST'])
+@login_required
+def update_application_status(application_id):
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('auth.login'))
+
+    app_obj = Application.query.get_or_404(application_id)
+    form = ApplicationStatusForm()
+
+    if form.validate_on_submit():
+        app_obj.status = form.status.data
+        db.session.commit()
+        flash("Application status updated.", "success")
+    else:
+        flash("Failed to update status.", "danger")
+
+    return redirect(url_for('admin.manage_applications'))
+
+
+# =========================
+# ASSIGN REVIEWERS
+# =========================
+@admin_bp.route("/assign_reviewers/<int:application_id>", methods=["GET", "POST"])
+@login_required
+def assign_reviewers(application_id):
+    if current_user.role != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("auth.login"))
+
+    application = Application.query.get_or_404(application_id)
+
+    reviewers = User.query.filter_by(role="reviewer").all()
+
+    form = AssignReviewersForm()
+    form.reviewers.choices = [(r.id, r.username) for r in reviewers]
+
+    if form.validate_on_submit():
+        selected_ids = form.reviewers.data
+
+        added = 0
+        for reviewer_id in selected_ids:
+            exists = Review.query.filter_by(
+                application_id=application.id,
+                reviewer_id=reviewer_id
+            ).first()
+            if not exists:
+                db.session.add(Review(application_id=application.id, reviewer_id=reviewer_id))
+                added += 1
+
+        db.session.commit()
+        flash(f"Reviewers assigned successfully! Added {added}.", "success")
+        return redirect(url_for("admin.manage_applications"))
+
+    existing_reviews = Review.query.filter_by(application_id=application.id).all()
+    assigned_reviewer_ids = {r.reviewer_id for r in existing_reviews}
+
+    return render_template(
+        "admin/assign_reviewers.html",
+        application=application,
+        form=form,
+        reviewers=reviewers,
+        assigned_reviewer_ids=assigned_reviewer_ids
+    )

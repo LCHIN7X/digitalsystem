@@ -67,3 +67,15 @@ class ApplicationForm(FlaskForm):
         validators=[DataRequired(), Length(max=1000)]
     )
     submit = SubmitField("Submit Application")
+
+class ApplicationStatusForm(FlaskForm):
+    status = SelectField(
+        "Status",
+        choices=[
+            ("Submitted", "Submitted"),
+            ("Under Review", "Under Review"),
+            ("Approved", "Approved"),
+            ("Rejected", "Rejected"),
+        ],
+        validators=[DataRequired()]
+    )
