@@ -242,7 +242,33 @@ function checkEligibility() {
 
     alert(messages.join("\n"));
 }
-</script>
 
+/* ✅ MULTI-STEP FORM NAVIGATION */
+let currentStep = 1;
+const totalSteps = 5;
+
+function showStep(step) {
+    document.querySelectorAll(".step").forEach((el) => el.classList.add("d-none"));
+    const active = document.querySelector(".step-" + step);
+    if (active) active.classList.remove("d-none");
+}
+
+function nextStep() {
+    if (currentStep < totalSteps) {
+        currentStep++;
+        showStep(currentStep);
+    }
+}
+
+function prevStep() {
+    if (currentStep > 1) {
+        currentStep--;
+        showStep(currentStep);
+    }
+}
+
+// ensure step 1 is shown on load
+showStep(currentStep);
+</script>
 
 {% endblock %}
