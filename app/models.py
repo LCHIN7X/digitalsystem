@@ -12,8 +12,9 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     your_id = db.Column(db.String(20), unique=True, nullable=True)
     password = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  
+    role = db.Column(db.String(20), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 class Scholarship(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -33,9 +34,10 @@ class Review(db.Model):
     comments = db.Column(db.Text)
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+
 class Application(db.Model):
     __tablename__ = 'application'
-    __table_args__ = {'extend_existing': True}  # <-- ADD THIS
+    __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -43,7 +45,26 @@ class Application(db.Model):
     documents = db.Column(db.Text)  # store file paths comma-separated
     status = db.Column(db.String(50), default="Pending")  # Pending, Reviewed, Accepted, Rejected
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
-    reviews = db.relationship('Review', backref='application', lazy=True)
 
+    reviews = db.relationship('Review', backref='application', lazy=True)
     scholarship = db.relationship('Scholarship', backref='applications')
 
+
+# =========================
+# SYSTEM LOGS (Admin handles system issues)
+# =========================
+class SystemLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    # info / warning / danger
+    level = db.Column(db.String(20), default="info", nullable=False)
+
+    # action label e.g. CREATE_SCHOLARSHIP, UPDATE_STATUS, ASSIGN_REVIEWERS
+    action = db.Column(db.String(80), nullable=False)
+
+    message = db.Column(db.Text, nullable=False)
+
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    user = db.relationship("User", backref="system_logs", lazy=True)

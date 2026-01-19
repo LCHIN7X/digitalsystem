@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Application Detail{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">Application #{{ application.id }}</h2>
+
+<div class="mb-3">
+  <a class="btn btn-secondary" href="{{ url_for('committee.applications') }}">Back to List</a>
+  <a class="btn btn-outline-secondary" href="{{ url_for('committee.dashboard') }}">Dashboard</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title">Application Info</h5>
+    <p class="mb-1"><b>Status:</b> {{ application.status }}</p>
+    <p class="mb-1"><b>Submitted At:</b> {{ application.submitted_at }}</p>
+
+    <p class="mb-1"><b>Student:</b>
+      {% if student %} {{ student.username }} ({{ student.email }}) {% else %} ID {{ application.student_id }} {% endif %}
+    </p>
+
+    <p class="mb-0"><b>Scholarship:</b>
+      {% if scholarship %} {{ scholarship.title }} {% else %} ID {{ application.scholarship_id }} {% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title">Documents</h5>
+    {% if doc_links %}
+      <ul class="mb-0">
+        {% for link in doc_links %}
+          <li><a href="{{ link }}" target="_blank">{{ link }}</a></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mb-0">No uploaded documents found.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title">Reviewer Scores & Comments</h5>
+
+    {% if avg_score is not none %}
+      <p><b>Average Score:</b> {{ avg_score }}</p>
+    {% endif %}
+
+    {% if reviews %}
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead>
+            <tr>
+              <th>Reviewer ID</th>
+              <th>Score</th>
+              <th>Comments</th>
+              <th>Submitted At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in reviews %}
+            <tr>
+              <td>{{ r.reviewer_id }}</td>
+              <td>{{ r.score }}</td>
+              <td>{{ r.comments }}</td>
+              <td>{{ r.submitted_at }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="mb-0">No reviews submitted yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">Send Decision</h5>
+
+    <form method="post" action="{{ url_for('committee.make_decision', application_id=application.id) }}">
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-success" name="decision" value="Accepted" type="submit">
+          Accept + Notify
+        </button>
+        <button class="btn btn-danger" name="decision" value="Rejected" type="submit">
+          Reject + Notify
+        </button>
+      </div>
+    </form>
+
+    <small class="text-muted d-block mt-2">
+      Notification is implemented as an in-app status update (for assignment demonstration).
+    </small>
+  </div>
+</div>
+{% endblock %}
