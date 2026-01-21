@@ -42,12 +42,17 @@ class Application(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     scholarship_id = db.Column(db.Integer, db.ForeignKey('scholarship.id'), nullable=False)
+    
+    reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+
     documents = db.Column(db.Text)  # store file paths comma-separated
     status = db.Column(db.String(50), default="Pending")  # Pending, Reviewed, Accepted, Rejected
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     reviews = db.relationship('Review', backref='application', lazy=True)
     scholarship = db.relationship('Scholarship', backref='applications')
+
+    reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 
 # =========================
@@ -68,3 +73,21 @@ class SystemLog(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     user = db.relationship("User", backref="system_logs", lazy=True)
+
+class Review(db.Model):
+    __tablename__ = 'review'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
+    reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    score = db.Column(db.Integer)   # 1–5
+    decision = db.Column(db.String(20))  # Pass / Fail
+    comment = db.Column(db.Text)
+
+    reviewed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    reviewer = db.relationship('User', backref='reviews')
+
