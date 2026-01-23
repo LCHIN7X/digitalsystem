@@ -39,13 +39,10 @@ class Application(db.Model):
 
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     scholarship_id = db.Column(db.Integer, db.ForeignKey('scholarship.id'), nullable=False)
-<<<<<<< HEAD
 
     # assigned reviewer (optional)
     reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
-=======
->>>>>>> 132a9ca1016390dc28d9dc8796cb3cc0b2fef3fa
     documents = db.Column(db.Text)  # store file paths comma-separated
     status = db.Column(db.String(50), default="Pending")  # Pending, Reviewed, Accepted, Rejected
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -54,10 +51,9 @@ class Application(db.Model):
     reviews = db.relationship('Review', backref='application', lazy=True)
     scholarship = db.relationship('Scholarship', backref='applications')
 
-<<<<<<< HEAD
 
 # =========================
-# REVIEW  (KEEP ONLY ONE)
+# REVIEW
 # =========================
 class Review(db.Model):
     __tablename__ = 'review'
@@ -67,21 +63,18 @@ class Review(db.Model):
     application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
     reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # Keep BOTH styles of fields so your existing reviewer/admin code won't break
-    # (some code might use score/comments/submitted_at, some might use decision/comment/reviewed_at)
-    score = db.Column(db.Integer)                 # 1–5 (or float before; int is ok if your UI uses 1-5)
+    # Support both old & new reviewer logic
+    score = db.Column(db.Integer)                 # numeric score
     decision = db.Column(db.String(20))           # Pass / Fail
-    comment = db.Column(db.Text)                  # newer name
+    comment = db.Column(db.Text)
 
-    comments = db.Column(db.Text)                 # backward compatibility (older code)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)  # backward compatibility
+    comments = db.Column(db.Text)                 # backward compatibility
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     reviewed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     reviewer = db.relationship('User', backref='reviews')
 
-=======
->>>>>>> 132a9ca1016390dc28d9dc8796cb3cc0b2fef3fa
 
 # =========================
 # SYSTEM LOGS
