@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_user, logout_user, login_required,current_user
+from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import User
@@ -36,23 +36,18 @@ def register():
             db.session.add(new_user)
             db.session.commit()
 
-          
             flash("Account successfully created! Please login.", "success")
             return redirect(url_for("auth.login"))
 
         except IntegrityError:
             db.session.rollback()
-
-          
             flash("Email or User ID already exists.", "danger")
             return render_template("auth/register.html")
 
     return render_template("auth/register.html")
 
 
-
-
-@auth_bp.route('/login', methods=['GET','POST'])
+@auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form['email']
@@ -82,11 +77,17 @@ def login():
     return render_template('auth/login.html')
 
 
-
 @auth_bp.route('/logout')
 @login_required
 def logout():
+    # save role BEFORE logout_user()
+    role = current_user.role
     logout_user()
     flash("Logged out", "info")
-    return redirect(url_for('auth.login'))
 
+    # admin should go back to /admin/login
+    if role == "admin":
+        return redirect(url_for('admin.admin_login'))
+
+    # everyone else goes to /auth/login
+    return redirect(url_for('auth.login'))
