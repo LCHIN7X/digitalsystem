@@ -1,11 +1,10 @@
 from app.extensions import db
 from flask_login import UserMixin
-from sqlalchemy.dialects.sqlite import JSON
-
 from datetime import datetime
 
-
-# User Roles
+# =========================
+# USER
+# =========================
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
@@ -16,6 +15,9 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+# =========================
+# SCHOLARSHIP
+# =========================
 class Scholarship(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -26,68 +28,72 @@ class Scholarship(db.Model):
     documents_required = db.Column(db.Text)  # comma-separated list
 
 
-class Review(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
-    reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    score = db.Column(db.Float)
-    comments = db.Column(db.Text)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-
+# =========================
+# APPLICATION
+# =========================
 class Application(db.Model):
     __tablename__ = 'application'
     __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
+
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     scholarship_id = db.Column(db.Integer, db.ForeignKey('scholarship.id'), nullable=False)
-    
+<<<<<<< HEAD
+
+    # assigned reviewer (optional)
     reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
+=======
+>>>>>>> 132a9ca1016390dc28d9dc8796cb3cc0b2fef3fa
     documents = db.Column(db.Text)  # store file paths comma-separated
     status = db.Column(db.String(50), default="Pending")  # Pending, Reviewed, Accepted, Rejected
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # relationships
     reviews = db.relationship('Review', backref='application', lazy=True)
     scholarship = db.relationship('Scholarship', backref='applications')
 
-    reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-
+<<<<<<< HEAD
 
 # =========================
-# SYSTEM LOGS (Admin handles system issues)
+# REVIEW  (KEEP ONLY ONE)
+# =========================
+class Review(db.Model):
+    __tablename__ = 'review'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
+    reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    # Keep BOTH styles of fields so your existing reviewer/admin code won't break
+    # (some code might use score/comments/submitted_at, some might use decision/comment/reviewed_at)
+    score = db.Column(db.Integer)                 # 1–5 (or float before; int is ok if your UI uses 1-5)
+    decision = db.Column(db.String(20))           # Pass / Fail
+    comment = db.Column(db.Text)                  # newer name
+
+    comments = db.Column(db.Text)                 # backward compatibility (older code)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)  # backward compatibility
+
+    reviewed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    reviewer = db.relationship('User', backref='reviews')
+
+=======
+>>>>>>> 132a9ca1016390dc28d9dc8796cb3cc0b2fef3fa
+
+# =========================
+# SYSTEM LOGS
 # =========================
 class SystemLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    # info / warning / danger
     level = db.Column(db.String(20), default="info", nullable=False)
-
-    # action label e.g. CREATE_SCHOLARSHIP, UPDATE_STATUS, ASSIGN_REVIEWERS
     action = db.Column(db.String(80), nullable=False)
-
     message = db.Column(db.Text, nullable=False)
 
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     user = db.relationship("User", backref="system_logs", lazy=True)
-
-class Review(db.Model):
-    __tablename__ = 'review'
-    __table_args__ = {'extend_existing': True}
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
-    reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    score = db.Column(db.Integer)   # 1–5
-    decision = db.Column(db.String(20))  # Pass / Fail
-    comment = db.Column(db.Text)
-
-    reviewed_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    reviewer = db.relationship('User', backref='reviews')
-

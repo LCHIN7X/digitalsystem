@@ -1,25 +1,16 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
+from sqlalchemy import func, case
 
-from app.extensions import db
-from app.models import Application, Scholarship, User, Review
+from app.models import db, Application, Review, User, Scholarship, SystemLog
 
-# Optional: use SystemLog if you already added it (admin part)
-try:
-    from app.models import SystemLog
-except Exception:
-    SystemLog = None
-
-committee_bp = Blueprint("committee", __name__)
+committee_bp = Blueprint("committee", __name__, template_folder="templates/committee")
 
 
-def committee_only():
-    return current_user.is_authenticated and current_user.role == "committee"
-
-
+# =========================
+# HELPER: LOG EVENTS
+# =========================
 def log_event(level: str, action: str, message: str, user_id=None):
-    if SystemLog is None:
-        return
     try:
         db.session.add(SystemLog(
             level=level,
@@ -30,127 +21,153 @@ def log_event(level: str, action: str, message: str, user_id=None):
         db.session.commit()
     except Exception:
         db.session.rollback()
+        # don't crash if logging fails
 
 
 # =========================
-# COMMITTEE DASHBOARD
+# DASHBOARD
 # =========================
 @committee_bp.route("/dashboard")
 @login_required
 def dashboard():
-    if not committee_only():
-        flash("Access denied.", "danger")
-        return redirect(url_for("auth.login"))
+    if current_user.role != "committee":
+        abort(403)
 
-    total_apps = Application.query.count()
-    pending_apps = Application.query.filter_by(status="Pending").count()
-    accepted_apps = Application.query.filter_by(status="Accepted").count()
-    rejected_apps = Application.query.filter_by(status="Rejected").count()
+    total = Application.query.count()
+    submitted = Application.query.filter(Application.status.in_(["Submitted", "Pending"])).count()
+    reviewed = Application.query.filter_by(status="Reviewed").count()
+    accepted = Application.query.filter_by(status="Accepted").count()
+    rejected = Application.query.filter_by(status="Rejected").count()
 
     return render_template(
         "committee/dashboard.html",
-        total_apps=total_apps,
-        pending_apps=pending_apps,
-        accepted_apps=accepted_apps,
-        rejected_apps=rejected_apps
+        total=total,
+        submitted=submitted,
+        reviewed=reviewed,
+        accepted=accepted,
+        rejected=rejected
     )
 
 
 # =========================
-# SEE ALL APPLICATIONS
+# LIST APPLICATIONS (FILTER / SORT / FAIL)
 # =========================
 @committee_bp.route("/applications")
 @login_required
 def applications():
-    if not committee_only():
-        flash("Access denied.", "danger")
-        return redirect(url_for("auth.login"))
+    if current_user.role != "committee":
+        abort(403)
 
-    status_filter = request.args.get("status", "").strip()
+    status = request.args.get("status", "").strip()      # e.g. Submitted/Reviewed/Accepted/Rejected
+    sort = request.args.get("sort", "").strip()          # avg_score_desc / avg_score_asc
+    fail_only = request.args.get("fail", "").strip()     # "1" = fail only
 
-    q = Application.query.order_by(Application.id.desc())
-    if status_filter:
-        q = q.filter(Application.status == status_filter)
+    # --- Subquery: avg_score + fail_count for each application ---
+    avg_sq = (
+        db.session.query(
+            Review.application_id.label("app_id"),
+            func.avg(Review.score).label("avg_score"),
+            func.sum(case((Review.decision == "Fail", 1), else_=0)).label("fail_count")
+        )
+        .group_by(Review.application_id)
+        .subquery()
+    )
 
-    applications_list = q.all()
+    # Query returns rows: (Application, avg_score, fail_count)
+    q = (
+        db.session.query(Application, avg_sq.c.avg_score, avg_sq.c.fail_count)
+        .outerjoin(avg_sq, avg_sq.c.app_id == Application.id)
+        .order_by(Application.id.desc())
+    )
+
+    # filter by status
+    if status:
+        q = q.filter(Application.status == status)
+
+    # fail_only rule:
+    # - fail if ANY reviewer decision == Fail OR avg_score < 3
+    if fail_only == "1":
+        q = q.filter(
+            (func.coalesce(avg_sq.c.fail_count, 0) > 0) |
+            (func.coalesce(avg_sq.c.avg_score, 0) < 3)
+        )
+
+    # sort by avg score
+    if sort == "avg_score_desc":
+        q = q.order_by(func.coalesce(avg_sq.c.avg_score, 0).desc())
+    elif sort == "avg_score_asc":
+        q = q.order_by(func.coalesce(avg_sq.c.avg_score, 0).asc())
+
+    rows = q.all()
 
     return render_template(
         "committee/applications.html",
-        applications=applications_list,
-        selected_status=status_filter
+        rows=rows,
+        status=status,
+        sort=sort,
+        fail_only=fail_only
     )
 
 
 # =========================
-# OPEN AN APPLICATION (DETAIL)
+# VIEW APPLICATION DETAIL + REVIEWS
 # =========================
 @committee_bp.route("/applications/<int:application_id>")
 @login_required
-def application_detail(application_id):
-    if not committee_only():
-        flash("Access denied.", "danger")
-        return redirect(url_for("auth.login"))
+def view_application(application_id):
+    if current_user.role != "committee":
+        abort(403)
 
     app_obj = Application.query.get_or_404(application_id)
 
-    student = User.query.get(app_obj.student_id)
-    scholarship = Scholarship.query.get(app_obj.scholarship_id)
+    # reviews for this application
+    reviews = Review.query.filter_by(application_id=app_obj.id).all()
 
-    reviews = Review.query.filter_by(application_id=app_obj.id).order_by(Review.id.desc()).all()
+    # average score
+    avg_score = db.session.query(func.avg(Review.score)).filter(Review.application_id == app_obj.id).scalar()
+    avg_score = float(avg_score) if avg_score is not None else 0.0
 
-    # documents stored as comma-separated paths
-    doc_links = []
-    if app_obj.documents:
-        paths = [p.strip() for p in app_obj.documents.split(",") if p.strip()]
-        for p in paths:
-            p2 = p.replace("\\", "/")
-            if p2.startswith("app/"):
-                p2 = p2[len("app/"):]
-            if not p2.startswith("/"):
-                p2 = "/" + p2
-            doc_links.append(p2)
-
-    scores = [r.score for r in reviews if r.score is not None]
-    avg_score = round(sum(scores) / len(scores), 2) if scores else None
+    # parse documents (comma-separated paths)
+    docs = []
+    if getattr(app_obj, "documents", None):
+        docs = [d.strip() for d in app_obj.documents.split(",") if d.strip()]
 
     return render_template(
         "committee/application_detail.html",
         application=app_obj,
-        student=student,
-        scholarship=scholarship,
         reviews=reviews,
-        doc_links=doc_links,
-        avg_score=avg_score
+        avg_score=avg_score,
+        documents=docs
     )
 
 
 # =========================
-# ACCEPT / REJECT (NOTIFY)
+# DECIDE ACCEPT / REJECT + "NOTIFY"
 # =========================
 @committee_bp.route("/applications/<int:application_id>/decision", methods=["POST"])
 @login_required
 def make_decision(application_id):
-    if not committee_only():
-        flash("Access denied.", "danger")
-        return redirect(url_for("auth.login"))
+    if current_user.role != "committee":
+        abort(403)
 
     app_obj = Application.query.get_or_404(application_id)
+    decision = request.form.get("decision", "").strip()  # "Accepted" or "Rejected"
 
-    decision = request.form.get("decision", "").strip()
     if decision not in ["Accepted", "Rejected"]:
         flash("Invalid decision.", "danger")
-        return redirect(url_for("committee.application_detail", application_id=application_id))
+        return redirect(url_for("committee.view_application", application_id=app_obj.id))
 
     app_obj.status = decision
     db.session.commit()
 
-    flash(f"Decision submitted: {decision}. Notification sent to student (in-app).", "success")
+    # Simulated notification (for assignment): flash + log
+    flash(f"Application #{app_obj.id} marked as {decision}. Notification sent to student (simulated).", "success")
 
     log_event(
         "info",
         "COMMITTEE_DECISION",
-        f"Committee set application #{app_obj.id} to {decision}",
+        f"Committee set application #{app_obj.id} to {decision}. (Notification simulated)",
         user_id=current_user.id
     )
 
-    return redirect(url_for("committee.application_detail", application_id=application_id))
+    return redirect(url_for("committee.view_application", application_id=app_obj.id))
