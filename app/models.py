@@ -39,10 +39,13 @@ class Application(db.Model):
 
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     scholarship_id = db.Column(db.Integer, db.ForeignKey('scholarship.id'), nullable=False)
+<<<<<<< HEAD
 
     # assigned reviewer (optional)
     reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
+=======
+>>>>>>> 132a9ca1016390dc28d9dc8796cb3cc0b2fef3fa
     documents = db.Column(db.Text)  # store file paths comma-separated
     status = db.Column(db.String(50), default="Pending")  # Pending, Reviewed, Accepted, Rejected
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -51,6 +54,7 @@ class Application(db.Model):
     reviews = db.relationship('Review', backref='application', lazy=True)
     scholarship = db.relationship('Scholarship', backref='applications')
 
+<<<<<<< HEAD
 
 # =========================
 # REVIEW  (KEEP ONLY ONE)
@@ -76,6 +80,8 @@ class Review(db.Model):
 
     reviewer = db.relationship('User', backref='reviews')
 
+=======
+>>>>>>> 132a9ca1016390dc28d9dc8796cb3cc0b2fef3fa
 
 # =========================
 # SYSTEM LOGS
