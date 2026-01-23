@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
-from sqlalchemy import distinct
 
-from app.models import db, Application, Review
+from app.extensions import db
+from app.models import Application, Review
 
 reviewer_bp = Blueprint(
     'reviewer',
@@ -10,20 +10,15 @@ reviewer_bp = Blueprint(
     template_folder='templates/reviewer'
 )
 
-<<<<<<< HEAD
 # =========================
 # DASHBOARD
 # =========================
-=======
->>>>>>> 132a9ca1016390dc28d9dc8796cb3cc0b2fef3fa
 @reviewer_bp.route('/dashboard')
 @login_required
 def dashboard():
-    reviews = Application.query.join(Review, Application.id==Review.application_id)\
-                .filter(Review.reviewer_id==current_user.id).all()
-    return render_template('reviewer/dashboard.html', applications=reviews)
+    if current_user.role != 'reviewer':
+        abort(403)
 
-<<<<<<< HEAD
     assigned_q = (
         Application.query
         .join(Review, Review.application_id == Application.id)
@@ -111,9 +106,17 @@ def review(app_id):
         return redirect(url_for('reviewer.view_review', app_id=app_obj.id))
 
     if request.method == 'POST':
-        review_row.score = request.form.get('score')
+        # score may come as string; store as int if possible
+        score_val = request.form.get('score')
+        try:
+            review_row.score = int(score_val) if score_val is not None and score_val != "" else None
+        except ValueError:
+            review_row.score = None
+
         review_row.decision = request.form.get('decision')
         review_row.comment = request.form.get('comment')
+
+        # Use DB time (no datetime import needed)
         review_row.reviewed_at = db.func.now()
 
         # keep backward compatibility
@@ -134,7 +137,7 @@ def review(app_id):
 
 
 # =========================
-# VIEW REVIEW (OPTION B FIX)
+# VIEW REVIEW
 # =========================
 @reviewer_bp.route('/review/<int:app_id>/view')
 @login_required
@@ -182,19 +185,3 @@ def ranking():
         'reviewer/ranking.html',
         apps=apps
     )
-=======
-@reviewer_bp.route('/review/<int:application_id>', methods=['GET','POST'])
-@login_required
-def review_application(application_id):
-    app_entry = Application.query.get_or_404(application_id)
-    if request.method == 'POST':
-        score = request.form['score']
-        comments = request.form['comments']
-        review = Review(application_id=application_id, reviewer_id=current_user.id, 
-                        score=score, comments=comments)
-        db.session.add(review)
-        db.session.commit()
-        flash("Review submitted!", "success")
-        return redirect(url_for('reviewer.dashboard'))
-    return render_template('review.html', application=app_entry)
->>>>>>> 132a9ca1016390dc28d9dc8796cb3cc0b2fef3fa
