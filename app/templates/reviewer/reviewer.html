@@ -4,23 +4,21 @@
 <h2>Review: {{ application.scholarship.title }}</h2>
 
 <h4>Student Details</h4>
-<table class="table table-bordered">
-    <tr><th>Full Name</th><td>{{ application_data.full_name or application.student.username }}</td></tr>
-    <tr><th>Email</th><td>{{ application_data.email or application.student.email }}</td></tr>
-    <tr><th>IC Number</th><td>{{ application_data.ic_number }}</td></tr>
-    <tr><th>DOB</th><td>{{ application_data.dob }}</td></tr>
-    <tr><th>Age</th><td>{{ application_data.age }}</td></tr>
-    <tr><th>Address</th><td>{{ application_data.address }}</td></tr>
-    <tr><th>Intake</th><td>{{ application_data.intake }}</td></tr>
-    <tr><th>Programme</th><td>{{ application_data.programme }}</td></tr>
-    <tr><th>Course</th><td>{{ application_data.course }}</td></tr>
-    <tr><th>Nationality</th><td>{{ application_data.nationality }}</td></tr>
-    <tr><th>Race</th><td>{{ application_data.race }}</td></tr>
-    <tr><th>Sex</th><td>{{ application_data.sex }}</td></tr>
-    <tr><th>Contact</th><td>{{ application_data.contact }}</td></tr>
-    <tr><th>Home Contact</th><td>{{ application_data.home_contact }}</td></tr>
-    <tr><th>Household Income</th><td>{{ application_data.household_income }}</td></tr>
-</table>
+<p>Full Name: {{ application.form_data.full_name or application.student.username }}</p>
+<p>Email: {{ application.form_data.email or application.student.email }}</p>
+<p>IC Number: {{ application.form_data.ic_number }}</p>
+<p>DOB: {{ application.form_data.dob }}</p>
+<p>Age: {{ application.form_data.age }}</p>
+<p>Address: {{ application.form_data.address }}</p>
+<p>Intake: {{ application.form_data.intake }}</p>
+<p>Programme: {{ application.form_data.programme }}</p>
+<p>Course: {{ application.form_data.course }}</p>
+<p>Nationality: {{ application.form_data.nationality }}</p>
+<p>Race: {{ application.form_data.race }}</p>
+<p>Sex: {{ application.form_data.sex }}</p>
+<p>Contact: {{ application.form_data.contact }}</p>
+<p>Home Contact: {{ application.form_data.home_contact }}</p>
+<p>Household Income: {{ application.form_data.household_income }}</p>
 
 <h4>Family Details</h4>
 <table class="table table-bordered">
