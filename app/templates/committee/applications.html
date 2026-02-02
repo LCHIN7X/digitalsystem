@@ -69,7 +69,10 @@
     {% for app, avg_score, fail_count in rows %}
       <tr>
         <td>{{ app.id }}</td>
-        <td>{{ app.student_id }}</td>
+
+        <!-- ✅ FIX: show real student ID (your_id) instead of numeric DB id -->
+        <td>{{ app.student.your_id or app.student_id }}</td>
+
         <td>{{ app.scholarship.title }}</td>
         <td>
           <span class="badge
