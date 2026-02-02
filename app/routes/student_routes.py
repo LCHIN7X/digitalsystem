@@ -29,7 +29,7 @@ def apply(scholarship_id):
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
     if request.method == 'POST':
-        # 1️⃣ Save uploaded files
+        
         files_to_save = []
 
         # Passport photo
@@ -46,7 +46,7 @@ def apply(scholarship_id):
             academic_doc.save(doc_path)
             files_to_save.append(doc_path)
 
-        # 2️⃣ Collect all form fields into a dictionary
+        
         application_data = {
             "full_name": request.form.get('full_name'),
             "address": request.form.get('address'),
@@ -77,7 +77,6 @@ def apply(scholarship_id):
             "statement": request.form.get('statement')
         }
 
-        # 3️⃣ Save to database
         new_application = Application(
             student_id=current_user.id,
             scholarship_id=scholarship.id,

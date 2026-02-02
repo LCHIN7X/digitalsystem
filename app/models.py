@@ -52,6 +52,7 @@ class Application(db.Model):
     scholarship = db.relationship('Scholarship', backref='applications')
 
     student = db.relationship('User', foreign_keys=[student_id], backref='applications')
+    form_data = db.Column(JSON)
 
 
 # =========================
