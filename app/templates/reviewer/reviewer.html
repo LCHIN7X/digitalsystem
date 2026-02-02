@@ -2,22 +2,94 @@
 {% block title %}Review Application{% endblock %}
 {% block content %}
 <h2>Review: {{ application.scholarship.title }}</h2>
-<p><strong>Student:</strong> {{ application.student.username }}</p>
-<p><strong>Documents:</strong></p>
+
+<h4>Student Details</h4>
+<table class="table table-bordered">
+    <tr><th>Full Name</th><td>{{ application_data.full_name or application.student.username }}</td></tr>
+    <tr><th>Email</th><td>{{ application_data.email or application.student.email }}</td></tr>
+    <tr><th>IC Number</th><td>{{ application_data.ic_number }}</td></tr>
+    <tr><th>DOB</th><td>{{ application_data.dob }}</td></tr>
+    <tr><th>Age</th><td>{{ application_data.age }}</td></tr>
+    <tr><th>Address</th><td>{{ application_data.address }}</td></tr>
+    <tr><th>Intake</th><td>{{ application_data.intake }}</td></tr>
+    <tr><th>Programme</th><td>{{ application_data.programme }}</td></tr>
+    <tr><th>Course</th><td>{{ application_data.course }}</td></tr>
+    <tr><th>Nationality</th><td>{{ application_data.nationality }}</td></tr>
+    <tr><th>Race</th><td>{{ application_data.race }}</td></tr>
+    <tr><th>Sex</th><td>{{ application_data.sex }}</td></tr>
+    <tr><th>Contact</th><td>{{ application_data.contact }}</td></tr>
+    <tr><th>Home Contact</th><td>{{ application_data.home_contact }}</td></tr>
+    <tr><th>Household Income</th><td>{{ application_data.household_income }}</td></tr>
+</table>
+
+<h4>Family Details</h4>
+<table class="table table-bordered">
+    <tr>
+        <th>Name</th>
+        <th>Relationship</th>
+        <th>Age</th>
+        <th>Occupation</th>
+        <th>Income</th>
+    </tr>
+    {% for i in range(application_data.family_name|length) %}
+    <tr>
+        <td>{{ application_data.family_name[i] }}</td>
+        <td>{{ application_data.relationship[i] }}</td>
+        <td>{{ application_data.family_age[i] }}</td>
+        <td>{{ application_data.occupation[i] }}</td>
+        <td>{{ application_data.family_income[i] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h4>Education & Achievements</h4>
+<table class="table table-bordered">
+    <tr><th>School Name</th><td>{{ application_data.school_name }}</td></tr>
+    <tr><th>Qualification</th><td>{{ application_data.qualification }}</td></tr>
+    <tr>
+        <th>Achievements</th>
+        <td>
+            <ul>
+                {% for i in range(application_data.activity_type|length) %}
+                    <li>{{ application_data.activity_type[i] }} - {{ application_data.level[i] }} - {{ application_data.year[i] }} - {{ application_data.achievement[i] }}</li>
+                {% endfor %}
+            </ul>
+        </td>
+    </tr>
+</table>
+
+<h4>Statement</h4>
+<p>{{ application_data.statement }}</p>
+
+<h4>Uploaded Documents</h4>
 <ul>
     {% for doc in application.documents.split(',') %}
-    <li><a href="{{ url_for('static', filename=doc.split('static/')[1]) }}" target="_blank">{{ doc.split('/')[-1] }}</a></li>
+        <li><a href="{{ url_for('static', filename=doc.split('static/')[1]) }}" target="_blank">{{ doc.split('/')[-1] }}</a></li>
     {% endfor %}
 </ul>
+
+<h4>Review</h4>
 <form method="POST">
     <div class="mb-3">
         <label class="form-label">Score (0-100)</label>
-        <input type="number" name="score" class="form-control" required>
+        <input type="number" name="score" class="form-control" value="{{ review.score or '' }}" required>
     </div>
+
     <div class="mb-3">
         <label class="form-label">Comments</label>
-        <textarea name="comments" class="form-control" rows="4" required></textarea>
+        <textarea name="comment" class="form-control" rows="4" required>{{ review.comment or '' }}</textarea>
     </div>
+
+    <div class="mb-3">
+        <label class="form-label">Application Status</label>
+        <select name="status" class="form-select" required>
+            {% set statuses = ['Eligible', 'Approved', 'Rejected', 'Pending'] %}
+            {% for s in statuses %}
+                <option value="{{ s }}" {% if application.status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
     <button type="submit" class="btn btn-success">Submit Review</button>
 </form>
 {% endblock %}
