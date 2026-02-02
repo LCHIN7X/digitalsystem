@@ -6,21 +6,29 @@
 
 <div class="row mb-4">
   <div class="col-md-6">
-    <div class="card text-white bg-primary mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Total Applications</h5>
-        <p class="card-text fs-2">{{ total_apps }}</p>
+    <!-- Blue card clickable -->
+    <a href="{{ url_for('admin.manage_applications') }}" class="text-decoration-none">
+      <div class="card text-white bg-primary mb-3" style="cursor:pointer;">
+        <div class="card-body">
+          <h5 class="card-title">Total Applications</h5>
+          <p class="card-text fs-2">{{ total_apps }}</p>
+          <small class="opacity-75">Click to manage applications</small>
+        </div>
       </div>
-    </div>
+    </a>
   </div>
 
   <div class="col-md-6">
-    <div class="card text-white bg-success mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Scholarships</h5>
-        <p class="card-text fs-2">{{ total_scholarships }}</p>
+    <!-- Green card clickable -->
+    <a href="{{ url_for('admin.manage_scholarships') }}" class="text-decoration-none">
+      <div class="card text-white bg-success mb-3" style="cursor:pointer;">
+        <div class="card-body">
+          <h5 class="card-title">Scholarships</h5>
+          <p class="card-text fs-2">{{ total_scholarships }}</p>
+          <small class="opacity-75">Click to manage scholarships</small>
+        </div>
       </div>
-    </div>
+    </a>
   </div>
 </div>
 
@@ -47,4 +55,3 @@
 </div>
 
 {% endblock %}
-

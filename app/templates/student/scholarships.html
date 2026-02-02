@@ -4,49 +4,56 @@
 {% block content %}
 <h2 class="mb-4">Available Scholarships</h2>
 
-<table class="table table-bordered table-hover">
+<table class="table table-bordered table-hover align-middle">
     <thead class="table-dark">
         <tr>
-            <th>Name</th>
-            <th>Details</th>
-            <th>Requirements</th>
-            <th>Deadline</th>  <!-- New column -->
-            <th>Action</th>
+            <th style="width: 20%;">Name</th>
+            <th style="width: 35%;">Details</th>
+            <th style="width: 25%;">Requirements</th>
+            <th style="width: 10%;">Deadline</th>
+            <th style="width: 10%;">Action</th>
         </tr>
     </thead>
+
     <tbody>
         {% for scholarship in scholarships %}
         <tr>
-            <td><strong>{{ scholarship.title }}</strong></td>
-            <td>{{ scholarship.description }}</td>
+            <!-- Scholarship Title -->
             <td>
-    <ul>
-        {% if scholarship.eligibility_criteria.min_cgpa %}
-            <li>Minimum CGPA: {{ scholarship.eligibility_criteria.min_cgpa }}</li>
-        {% endif %}
-        {% if scholarship.eligibility_criteria.max_income %}
-            <li>Maximum Household Income: RM{{ scholarship.eligibility_criteria.max_income }}</li>
-        {% endif %}
-        {% if scholarship.eligibility_criteria.excluded_programmes %}
-            <li>Excluded Programmes: {{ scholarship.eligibility_criteria.excluded_programmes | join(', ') }}</li>
-        {% endif %}
-        {% if scholarship.eligibility_criteria.required_criteria %}
-            {% for item in scholarship.eligibility_criteria.required_criteria %}
-                <li>{{ item }}</li>
-            {% endfor %}
-        {% endif %}
-    </ul>
-</td>
+                <strong>{{ scholarship.title }}</strong>
+            </td>
 
-            <td>&nbsp;
+            <!-- Description -->
+            <td>
+                {{ scholarship.description }}
+            </td>
+
+            <!-- Requirements (bullet list) -->
+            <td>
+                {% if scholarship.req_lines and scholarship.req_lines|length > 0 %}
+                    <ul class="mb-0">
+                        {% for item in scholarship.req_lines %}
+                            <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <span class="text-muted">No requirements specified</span>
+                {% endif %}
+            </td>
+
+            <!-- Deadline -->
+            <td>
                 {% if scholarship.application_deadline %}
                     {{ scholarship.application_deadline.strftime('%d %b %Y') }}
                 {% else %}
                     N/A
-                {% endif %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                {% endif %}
             </td>
+
+            <!-- Apply Button -->
             <td>
-                <a href="{{ url_for('student.apply', scholarship_id=scholarship.id) }}" class="btn btn-success btn-sm">
+                <a href="{{ url_for('student.apply', scholarship_id=scholarship.id) }}"
+                   class="btn btn-success btn-sm">
                     Apply
                 </a>
             </td>
