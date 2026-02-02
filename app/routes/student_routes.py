@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.models import Scholarship, Application
 from app.extensions import db
+from werkzeug.security import generate_password_hash, check_password_hash
+import re 
 import os
 
 student_bp = Blueprint('student', __name__, template_folder='templates/student')
@@ -83,10 +85,6 @@ def apply(scholarship_id):
             status="Pending"
         )
 
-        # Optional: Save all form data as JSON inside documents or another column
-        # You can add a new column `form_data = db.Column(db.JSON)` to Application model
-        # new_application.form_data = application_data
-
         db.session.add(new_application)
         db.session.commit()
 
@@ -106,15 +104,6 @@ def profile():
 
         # Update username and bio
         current_user.username = username
-        current_user.bio = bio
-
-        # Handle profile picture
-        file = request.files.get('profile_pic')
-        if file:
-            filename = file.filename
-            filepath = os.path.join('app/static/uploads', filename)
-            file.save(filepath)
-            current_user.profile_pic = filename
 
         db.session.commit()
         flash("Profile updated successfully!", "success")

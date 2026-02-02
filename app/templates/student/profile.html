@@ -23,13 +23,6 @@
              value="{{ current_user.your_id }}" readonly>
     </div>
 
-    <!-- Bio -->
-    <div class="mb-3">
-      <label for="bio" class="form-label">Bio</label>
-      <textarea class="form-control" id="bio" name="bio" rows="4" 
-                placeholder="Tell people about yourself...">{{ current_user.bio }}</textarea>
-    </div>
-
     <a href="{{ url_for('student.change_password') }}" class="btn btn-danger ">Change your password</a>
 
     <button type="submit" class="btn btn-primary float-end">Update Account Details</button>
