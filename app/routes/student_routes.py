@@ -96,9 +96,9 @@ def apply(scholarship_id):
         new_application = Application(
             student_id=current_user.id,
             scholarship_id=scholarship.id,
-            documents=",".join(files_to_save),   # ✅ now stored as: uploads/xxx.pdf
+            documents=",".join(files_to_save),   
             status="Pending",
-            form_data=application_data           # ✅ save the JSON form data
+            form_data=application_data          
         )
 
         db.session.add(new_application)
@@ -107,7 +107,7 @@ def apply(scholarship_id):
         flash("Your application has been submitted!", "success")
         return redirect(url_for('student.dashboard'))
 
-    # GET request: show form
+
     return render_template('student/apply.html', scholarship=scholarship)
 
 
