@@ -1,23 +1,42 @@
 {% extends "base.html" %}
-{% block title %}Reviewer Dashboard{% endblock %}
+{% block title %}Review Dashboard{% endblock %}
 {% block content %}
-<h2>Your Assigned Applications</h2>
-<table class="table table-bordered">
+<h2>Reviewer Dashboard</h2>
+<p>Total assigned: {{ total }}, Pending: {{ pending }}, Reviewed: {{ reviewed }}</p>
+
+<!-- Sort buttons -->
+<div class="mb-3">
+  <a href="?sort=date" class="btn btn-secondary btn-sm">Sort by Date</a>
+  <a href="?sort=status" class="btn btn-secondary btn-sm">Sort by Status</a>
+</div>
+
+<table class="table">
     <thead>
         <tr>
             <th>Student</th>
             <th>Scholarship</th>
-            <th>Submitted At</th>
+            <th>Status</th>
+            <th>Score</th>
             <th>Action</th>
         </tr>
     </thead>
     <tbody>
-        {% for app in applications %}
+        {% for review in reviews %}
         <tr>
-            <td>{{ app.student.username }}</td>
-            <td>{{ app.scholarship.title }}</td>
-            <td>{{ app.submitted_at.strftime('%Y-%m-%d') }}</td>
-            <td><a href="{{ url_for('reviewer.review_application', application_id=app.id) }}" class="btn btn-primary btn-sm">Review</a></td>
+            <td>{{ review.application.student.username }}</td>
+            <td>{{ review.application.scholarship.title }}</td>
+            <td>{{ review.application.status or "Pending" }}</td>
+            <td>{{ review.score or "-" }}</td>
+            <td>
+                {% if review.decision is none %}
+                <a href="{{ url_for('reviewer.review', app_id=review.application.id) }}"
+                    class="btn btn-primary btn-sm">
+                        Review </a>
+
+                {% else %}
+                <a href="{{ url_for('reviewer.view_review', app_id=review.application.id) }}" class="btn btn-secondary btn-sm">View</a>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>

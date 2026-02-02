@@ -51,6 +51,8 @@ class Application(db.Model):
     reviews = db.relationship('Review', backref='application', lazy=True)
     scholarship = db.relationship('Scholarship', backref='applications')
 
+    student = db.relationship('User', foreign_keys=[student_id], backref='applications')
+
 
 # =========================
 # REVIEW
