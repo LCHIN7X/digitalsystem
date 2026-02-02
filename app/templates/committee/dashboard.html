@@ -2,45 +2,57 @@
 {% block title %}Committee Dashboard{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Scholarship Committee Dashboard</h2>
+<div class="container mt-4">
 
-<div class="row mb-4">
-  <div class="col-md-3">
-    <div class="card text-white bg-primary mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Total Applications</h5>
-        <p class="card-text fs-2">{{ total_apps }}</p>
+  <h2 class="mb-4">Scholarship Committee Dashboard</h2>
+
+  <div class="row mb-4">
+
+    <!-- Total Applications -->
+    <div class="col-md-3">
+      <div class="card text-white bg-primary mb-3">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">Total Applications</h5>
+          <span class="fs-2">{{ total }}</span>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="col-md-3">
-    <div class="card text-white bg-warning mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Pending</h5>
-        <p class="card-text fs-2">{{ pending_apps }}</p>
+    <!-- Pending -->
+    <div class="col-md-3">
+      <div class="card text-dark bg-warning mb-3">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">Pending</h5>
+          <span class="fs-2">{{ submitted }}</span>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="col-md-3">
-    <div class="card text-white bg-success mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Accepted</h5>
-        <p class="card-text fs-2">{{ accepted_apps }}</p>
+    <!-- Accepted -->
+    <div class="col-md-3">
+      <div class="card text-white bg-success mb-3">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">Accepted</h5>
+          <span class="fs-2">{{ accepted }}</span>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="col-md-3">
-    <div class="card text-white bg-danger mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Rejected</h5>
-        <p class="card-text fs-2">{{ rejected_apps }}</p>
+    <!-- Rejected -->
+    <div class="col-md-3">
+      <div class="card text-white bg-danger mb-3">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">Rejected</h5>
+          <span class="fs-2">{{ rejected }}</span>
+        </div>
       </div>
     </div>
+
   </div>
+
+  <a class="btn btn-dark" href="{{ url_for('committee.applications') }}">
+    See All Applications
+  </a>
+
 </div>
-
-<a class="btn btn-dark" href="{{ url_for('committee.applications') }}">See All Applications</a>
 {% endblock %}
