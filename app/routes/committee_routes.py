@@ -151,17 +151,40 @@ def make_decision(application_id):
         abort(403)
 
     app_obj = Application.query.get_or_404(application_id)
-    decision = request.form.get("decision", "").strip()  # "Accepted" or "Rejected"
 
-    if decision not in ["Accepted", "Rejected"]:
+    # ✅ decision 可以来自：
+    # 1) form hidden input: <input name="decision" value="Accepted">
+    # 2) query string: /decision?decision=Accepted (也兼容)
+    decision_raw = (
+        request.form.get("decision")
+        or request.args.get("decision")
+        or ""
+    ).strip().lower()
+
+    # ✅ 兼容不同写法（避免 Invalid decision）
+    mapping = {
+        "accepted": "Accepted",
+        "accept": "Accepted",
+        "approved": "Accepted",
+        "approve": "Accepted",
+
+        "rejected": "Rejected",
+        "reject": "Rejected",
+    }
+
+    if decision_raw not in mapping:
         flash("Invalid decision.", "danger")
         return redirect(url_for("committee.view_application", application_id=app_obj.id))
 
+    decision = mapping[decision_raw]
     app_obj.status = decision
     db.session.commit()
 
     # Simulated notification (for assignment): flash + log
-    flash(f"Application #{app_obj.id} marked as {decision}. Notification sent to student (simulated).", "success")
+    flash(
+        f"Application #{app_obj.id} marked as {decision}. Notification sent to student (simulated).",
+        "success"
+    )
 
     log_event(
         "info",

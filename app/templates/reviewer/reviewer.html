@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Review Application{% endblock %}
+
 {% block content %}
 <h2>Review: {{ application.scholarship.title }}</h2>
 
@@ -19,6 +20,8 @@
 <p>Contact: {{ application.form_data.contact }}</p>
 <p>Home Contact: {{ application.form_data.home_contact }}</p>
 <p>Household Income: {{ application.form_data.household_income }}</p>
+
+<hr>
 
 <h4>Family Details</h4>
 <table class="table table-bordered">
@@ -40,54 +43,84 @@
     {% endfor %}
 </table>
 
+<hr>
+
 <h4>Education & Achievements</h4>
 <table class="table table-bordered">
-    <tr><th>School Name</th><td>{{ application_data.school_name }}</td></tr>
-    <tr><th>Qualification</th><td>{{ application_data.qualification }}</td></tr>
+    <tr>
+        <th>School Name</th>
+        <td>{{ application_data.school_name }}</td>
+    </tr>
+    <tr>
+        <th>Qualification</th>
+        <td>{{ application_data.qualification }}</td>
+    </tr>
     <tr>
         <th>Achievements</th>
         <td>
             <ul>
                 {% for i in range(application_data.activity_type|length) %}
-                    <li>{{ application_data.activity_type[i] }} - {{ application_data.level[i] }} - {{ application_data.year[i] }} - {{ application_data.achievement[i] }}</li>
+                    <li>
+                        {{ application_data.activity_type[i] }}
+                        - {{ application_data.level[i] }}
+                        - {{ application_data.year[i] }}
+                        - {{ application_data.achievement[i] }}
+                    </li>
                 {% endfor %}
             </ul>
         </td>
     </tr>
 </table>
 
+<hr>
+
 <h4>Statement</h4>
 <p>{{ application_data.statement }}</p>
+
+<hr>
 
 <h4>Uploaded Documents</h4>
 <ul>
     {% for doc in application.documents.split(',') %}
-        <li><a href="{{ url_for('static', filename=doc.split('static/')[1]) }}" target="_blank">{{ doc.split('/')[-1] }}</a></li>
+        {% set d = doc.strip() %}
+        {% if d %}
+        <li>
+            <a href="{{ url_for('static', filename=d) }}" target="_blank">
+                {{ d.split('/')[-1] }}
+            </a>
+        </li>
+        {% endif %}
     {% endfor %}
 </ul>
 
+<hr>
+
 <h4>Review</h4>
 <form method="POST">
+
     <div class="mb-3">
-        <label class="form-label">Score (0-100)</label>
-        <input type="number" name="score" class="form-control" value="{{ review.score or '' }}" required>
+        <label class="form-label">Score (0–100)</label>
+        <input type="number"
+               name="score"
+               class="form-control"
+               min="0"
+               max="100"
+               value="{{ review.score if review else '' }}"
+               required>
     </div>
 
     <div class="mb-3">
         <label class="form-label">Comments</label>
-        <textarea name="comment" class="form-control" rows="4" required>{{ review.comment or '' }}</textarea>
+        <textarea name="comment"
+                  class="form-control"
+                  rows="4"
+                  required>{{ review.comment if review else '' }}</textarea>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Application Status</label>
-        <select name="status" class="form-select" required>
-            {% set statuses = ['Eligible', 'Approved', 'Rejected', 'Pending'] %}
-            {% for s in statuses %}
-                <option value="{{ s }}" {% if application.status == s %}selected{% endif %}>{{ s }}</option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <button type="submit" class="btn btn-success">Submit Review</button>
+    <button type="submit" class="btn btn-success">
+        Submit Review
+    </button>
 </form>
+
 {% endblock %}
+

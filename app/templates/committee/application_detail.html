@@ -2,99 +2,103 @@
 {% block title %}Application Detail{% endblock %}
 
 {% block content %}
-<h2 class="mb-3">Application #{{ application.id }}</h2>
 
-<div class="mb-3">
-  <a class="btn btn-secondary" href="{{ url_for('committee.applications') }}">Back to List</a>
-  <a class="btn btn-outline-secondary" href="{{ url_for('committee.dashboard') }}">Dashboard</a>
+<div class="d-flex gap-2 mb-3">
+  <a href="{{ url_for('committee.applications') }}" class="btn btn-secondary">Back to List</a>
+  <a href="{{ url_for('committee.dashboard') }}" class="btn btn-outline-secondary">Dashboard</a>
 </div>
 
-<div class="card mb-3">
+<!-- ========================= -->
+<!-- APPLICATION INFO -->
+<!-- ========================= -->
+<div class="card mb-4">
   <div class="card-body">
-    <h5 class="card-title">Application Info</h5>
-    <p class="mb-1"><b>Status:</b> {{ application.status }}</p>
-    <p class="mb-1"><b>Submitted At:</b> {{ application.submitted_at }}</p>
+    <h4 class="card-title mb-3">Application Info</h4>
 
-    <p class="mb-1"><b>Student:</b>
-      {% if student %} {{ student.username }} ({{ student.email }}) {% else %} ID {{ application.student_id }} {% endif %}
-    </p>
-
-    <p class="mb-0"><b>Scholarship:</b>
-      {% if scholarship %} {{ scholarship.title }} {% else %} ID {{ application.scholarship_id }} {% endif %}
-    </p>
+    <p><b>Status:</b> {{ application.status }}</p>
+    <p><b>Submitted At:</b> {{ application.submitted_at }}</p>
+    <p><b>Student:</b> ID {{ application.student_id }}</p>
+    <p><b>Scholarship:</b> ID {{ application.scholarship_id }}</p>
   </div>
 </div>
 
-<div class="card mb-3">
+<!-- ========================= -->
+<!-- DOCUMENTS -->
+<!-- ========================= -->
+<div class="card mb-4">
   <div class="card-body">
-    <h5 class="card-title">Documents</h5>
-    {% if doc_links %}
+    <h4 class="card-title mb-3">Documents</h4>
+
+    {% if application.documents %}
+      {% set docs = application.documents.split(',') %}
       <ul class="mb-0">
-        {% for link in doc_links %}
-          <li><a href="{{ link }}" target="_blank">{{ link }}</a></li>
+        {% for doc in docs %}
+          {% set d = doc.strip() %}
+          {% if d %}
+            <li>
+              <a href="{{ url_for('static', filename=d) }}" target="_blank">
+                {{ d.split('/')[-1] }}
+              </a>
+            </li>
+          {% endif %}
         {% endfor %}
       </ul>
     {% else %}
-      <p class="mb-0">No uploaded documents found.</p>
+      <p class="text-muted mb-0">No uploaded documents found.</p>
     {% endif %}
   </div>
 </div>
 
-<div class="card mb-3">
+<!-- ========================= -->
+<!-- REVIEWER SCORES & COMMENTS -->
+<!-- ========================= -->
+<div class="card mb-4">
   <div class="card-body">
-    <h5 class="card-title">Reviewer Scores & Comments</h5>
+    <h4 class="card-title mb-3">Reviewer Scores & Comments</h4>
 
-    {% if avg_score is not none %}
-      <p><b>Average Score:</b> {{ avg_score }}</p>
-    {% endif %}
+    <p><b>Average Score:</b> {{ avg_score }}</p>
 
     {% if reviews %}
-      <div class="table-responsive">
-        <table class="table table-bordered align-middle">
-          <thead>
-            <tr>
-              <th>Reviewer ID</th>
-              <th>Score</th>
-              <th>Comments</th>
-              <th>Submitted At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in reviews %}
-            <tr>
-              <td>{{ r.reviewer_id }}</td>
-              <td>{{ r.score }}</td>
-              <td>{{ r.comments }}</td>
-              <td>{{ r.submitted_at }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+      <ul class="list-group">
+        {% for r in reviews %}
+          <li class="list-group-item">
+            <b>Reviewer ID:</b> {{ r.reviewer_id }} <br>
+            <b>Score:</b> {{ r.score }} <br>
+            <b>Comment:</b>
+            <div class="mt-1">{{ r.comment or "No comment" }}</div>
+          </li>
+        {% endfor %}
+      </ul>
     {% else %}
-      <p class="mb-0">No reviews submitted yet.</p>
+      <p class="text-muted mb-0">No reviews submitted yet.</p>
     {% endif %}
   </div>
 </div>
 
-<div class="card">
+<!-- ========================= -->
+<!-- SEND DECISION (KEEP THIS) -->
+<!-- ========================= -->
+<div class="card mb-4">
   <div class="card-body">
-    <h5 class="card-title">Send Decision</h5>
+    <h4 class="card-title mb-3">Send Decision</h4>
 
-    <form method="post" action="{{ url_for('committee.make_decision', application_id=application.id) }}">
-      <div class="d-flex gap-2 flex-wrap">
-        <button class="btn btn-success" name="decision" value="Accepted" type="submit">
-          Accept + Notify
-        </button>
-        <button class="btn btn-danger" name="decision" value="Rejected" type="submit">
-          Reject + Notify
-        </button>
-      </div>
-    </form>
+    <div class="d-flex gap-2">
+      <form method="POST"
+            action="{{ url_for('committee.make_decision', application_id=application.id, decision='Accepted') }}">
+        <button type="submit" class="btn btn-success">Accept + Notify</button>
+      </form>
 
-    <small class="text-muted d-block mt-2">
+      <form method="POST"
+            action="{{ url_for('committee.make_decision', application_id=application.id, decision='Rejected') }}">
+        <button type="submit" class="btn btn-danger">Reject + Notify</button>
+      </form>
+    </div>
+
+    <p class="text-muted mt-2 mb-0">
       Notification is implemented as an in-app status update (for assignment demonstration).
-    </small>
+    </p>
   </div>
 </div>
+
+
 {% endblock %}

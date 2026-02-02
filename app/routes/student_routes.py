@@ -6,8 +6,20 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import re
 import os
+import time
 
 student_bp = Blueprint('student', __name__, template_folder='templates/student')
+
+# ✅ allow these file types
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "pdf", "doc", "docx"}
+
+def allowed_file(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def make_unique_filename(original_filename: str) -> str:
+    # prevent overwrite by adding user_id + timestamp
+    clean = secure_filename(original_filename)
+    return f"{current_user.id}_{int(time.time())}_{clean}"
 
 
 @student_bp.route('/dashboard')
@@ -21,6 +33,30 @@ def dashboard():
 @login_required
 def scholarships():
     scholarships = Scholarship.query.all()
+
+    # ✅ Build requirements bullet list for template
+    # Supports:
+    # 1) New format: dict -> {"min_cgpa":..., "max_income":..., "required_criteria":[...]}
+    # 2) Old format: plain text with newlines
+    for s in scholarships:
+        c = s.eligibility_criteria
+        req_lines = []
+
+        if isinstance(c, dict):
+            if c.get("min_cgpa") is not None:
+                req_lines.append(f"Minimum CGPA: {c.get('min_cgpa')}")
+            if c.get("max_income") is not None:
+                req_lines.append(f"Maximum Household Income: RM{c.get('max_income')}")
+            if c.get("required_criteria"):
+                req_lines += [str(x) for x in c.get("required_criteria") if x]
+
+        elif c:
+            # old plain text -> split by newline into bullets
+            req_lines = [line.strip() for line in str(c).split("\n") if line.strip()]
+
+        # attach to object for Jinja
+        s.req_lines = req_lines
+
     return render_template('student/scholarships.html', scholarships=scholarships)
 
 
@@ -29,22 +65,25 @@ def scholarships():
 def apply(scholarship_id):
     scholarship = Scholarship.query.get_or_404(scholarship_id)
 
-    # ✅ Correct upload folder (absolute path on disk)
+    # ✅ upload folder (absolute path on disk)
     UPLOAD_FOLDER = os.path.join(current_app.root_path, 'static', 'uploads')
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
     if request.method == 'POST':
-
         files_to_save = []
 
         # =========================
-        # SAVE FILES
+        # SAVE FILES (png/jpg/jpeg/pdf/doc/docx)
         # =========================
 
         # Passport photo
         photo = request.files.get('photo')
         if photo and photo.filename:
-            photo_filename = secure_filename(photo.filename)
+            if not allowed_file(photo.filename):
+                flash("Photo file type not allowed. Allowed: png, jpg, jpeg, pdf, doc, docx", "danger")
+                return redirect(request.url)
+
+            photo_filename = make_unique_filename(photo.filename)
             photo.save(os.path.join(UPLOAD_FOLDER, photo_filename))
             # ✅ store relative to /static
             files_to_save.append(f"uploads/{photo_filename}")
@@ -52,13 +91,17 @@ def apply(scholarship_id):
         # Academic document
         academic_doc = request.files.get('academic_doc')
         if academic_doc and academic_doc.filename:
-            doc_filename = secure_filename(academic_doc.filename)
+            if not allowed_file(academic_doc.filename):
+                flash("Document type not allowed. Allowed: png, jpg, jpeg, pdf, doc, docx", "danger")
+                return redirect(request.url)
+
+            doc_filename = make_unique_filename(academic_doc.filename)
             academic_doc.save(os.path.join(UPLOAD_FOLDER, doc_filename))
             # ✅ store relative to /static
             files_to_save.append(f"uploads/{doc_filename}")
 
         # =========================
-        # FORM DATA (you already collect this)
+        # FORM DATA
         # =========================
         application_data = {
             "full_name": request.form.get('full_name'),
@@ -96,9 +139,9 @@ def apply(scholarship_id):
         new_application = Application(
             student_id=current_user.id,
             scholarship_id=scholarship.id,
-            documents=",".join(files_to_save),   
+            documents=",".join(files_to_save),
             status="Pending",
-            form_data=application_data          
+            form_data=application_data
         )
 
         db.session.add(new_application)
@@ -106,7 +149,6 @@ def apply(scholarship_id):
 
         flash("Your application has been submitted!", "success")
         return redirect(url_for('student.dashboard'))
-
 
     return render_template('student/apply.html', scholarship=scholarship)
 
@@ -118,7 +160,7 @@ def profile():
         username = request.form.get('username')
         bio = request.form.get('bio')
 
-        # Update username and bio
+        # Update username (bio 你如果 DB 没字段就不要写)
         current_user.username = username
 
         db.session.commit()
@@ -170,7 +212,7 @@ def eligibility(scholarship_id):
     if request.method == 'POST':
         # simple keyword match in profile
         criteria = scholarship.eligibility_criteria or ""
-        if criteria.lower() in current_user.username.lower():
+        if str(criteria).lower() in current_user.username.lower():
             eligible = True
         else:
             eligible = False
