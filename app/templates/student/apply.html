@@ -200,6 +200,7 @@
     <h5>Personal Statement</h5>
     <label>State briefly why you are deserving of this scholarship (Max 1000 words)</label>
     <textarea class="form-control" rows="8" maxlength="1000" name="statement" required></textarea>
+    <br>
 
     <button type="button" class="btn btn-secondary" onclick="prevStep()">Back</button>
     <button type="submit" class="btn btn-success">Submit Application</button>
@@ -258,6 +259,11 @@ function nextStep() {
     // 2️⃣ Check eligibility (only on Step 1 where CGPA/income/programme exist)
     if (currentStep === 1) {
         const eligibilityMessages = validateEligibility();
+        const cgpa = parseFloat(document.getElementById('cgpa').value) || 0;
+        if (cgpa > 4.0) {
+            alert("CGPA cannot exceed 4.0");
+            return;
+        }
         if (eligibilityMessages.length > 0) {
             alert("Eligibility check failed:\n" + eligibilityMessages.join("\n"));
             return;
