@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
-
 from app.extensions import db
 from app.models import Application, Review
 
@@ -19,66 +18,44 @@ def dashboard():
     if current_user.role != 'reviewer':
         abort(403)
 
-    assigned_q = (
-        Application.query
-        .join(Review, Review.application_id == Application.id)
-        .filter(Review.reviewer_id == current_user.id)
-    )
+    # get all reviews assigned to this reviewer
+    reviews = Review.query.filter_by(reviewer_id=current_user.id).all()
 
-    total = assigned_q.distinct().count()
-
-    pending = (
-        assigned_q
-        .filter(Application.status != "Reviewed")
-        .distinct()
-        .count()
-    )
-
-    reviewed = (
-        assigned_q
-        .filter(Application.status == "Reviewed")
-        .distinct()
-        .count()
-    )
+    total = len(reviews)
+    pending = sum(1 for r in reviews if r.decision is None)
+    reviewed = sum(1 for r in reviews if r.decision is not None)
 
     return render_template(
         'reviewer/dashboard.html',
+        reviews=reviews,
         total=total,
         pending=pending,
         reviewed=reviewed
     )
-
 
 # =========================
 # VIEW ASSIGNED APPLICATIONS
 # =========================
 @reviewer_bp.route('/applications')
 @login_required
-def applications():
+def applications_list():
     if current_user.role != 'reviewer':
         abort(403)
 
     sort = request.args.get('sort')
 
-    query = (
-        Application.query
-        .join(Review, Review.application_id == Application.id)
-        .filter(Review.reviewer_id == current_user.id)
-        .distinct()
-    )
+    # get all reviews with applications
+    reviews = Review.query.filter_by(reviewer_id=current_user.id).join(Application).all()
 
     if sort == 'date':
-        query = query.order_by(Application.submitted_at.desc())
+        reviews.sort(key=lambda r: r.application.submitted_at, reverse=True)
     elif sort == 'status':
-        query = query.order_by(Application.status)
-
-    apps = query.all()
+        reviews.sort(key=lambda r: r.decision or '')  # pending first
 
     return render_template(
-        'reviewer/applications.html',
-        apps=apps
+        'reviewer/dashboard.html',
+        reviews=reviews
     )
-
 
 # =========================
 # REVIEW FORM
@@ -94,45 +71,57 @@ def review(app_id):
     review_row = Review.query.filter_by(
         application_id=app_obj.id,
         reviewer_id=current_user.id
-    ).first()
+    ).first_or_404()
 
-    if not review_row:
-        flash("This application is not assigned to you.", "danger")
-        return redirect(url_for('reviewer.applications'))
+    
+    application_data = {
+        "full_name": app_obj.student.username,
+        "email": app_obj.student.email,
+        "ic_number": getattr(app_obj, 'ic_number', ''),
+        "dob": getattr(app_obj, 'dob', ''),
+        "age": getattr(app_obj, 'age', ''),
+        "address": getattr(app_obj, 'address', ''),
+        "intake": getattr(app_obj, 'intake', ''),
+        "programme": getattr(app_obj, 'programme', ''),
+        "course": getattr(app_obj, 'course', ''),
+        "nationality": getattr(app_obj, 'nationality', ''),
+        "race": getattr(app_obj, 'race', ''),
+        "sex": getattr(app_obj, 'sex', ''),
+        "contact": getattr(app_obj, 'contact', ''),
+        "home_contact": getattr(app_obj, 'home_contact', ''),
+        "household_income": getattr(app_obj, 'household_income', ''),
 
-    # prevent double review
-    if review_row.decision or review_row.score is not None:
-        flash("You already reviewed this application.", "info")
-        return redirect(url_for('reviewer.view_review', app_id=app_obj.id))
+        # arrays — prevent template crash
+        "family_name": [],
+        "relationship": [],
+        "family_age": [],
+        "occupation": [],
+        "family_income": [],
+
+        "activity_type": [],
+        "level": [],
+        "year": [],
+        "achievement": [],
+
+        "school_name": getattr(app_obj, 'school_name', ''),
+        "qualification": getattr(app_obj, 'qualification', ''),
+        "statement": getattr(app_obj, 'statement', '')
+    }
 
     if request.method == 'POST':
-        # score may come as string; store as int if possible
-        score_val = request.form.get('score')
-        try:
-            review_row.score = int(score_val) if score_val is not None and score_val != "" else None
-        except ValueError:
-            review_row.score = None
-
-        review_row.decision = request.form.get('decision')
+        review_row.score = int(request.form.get('score'))
         review_row.comment = request.form.get('comment')
-
-        # Use DB time (no datetime import needed)
-        review_row.reviewed_at = db.func.now()
-
-        # keep backward compatibility
-        if hasattr(review_row, "comments") and not review_row.comments:
-            review_row.comments = review_row.comment
-
-        app_obj.status = "Reviewed"
+        app_obj.status = request.form.get('status')
 
         db.session.commit()
-
-        flash("Review submitted successfully.", "success")
-        return redirect(url_for('reviewer.applications'))
+        flash("Review submitted successfully", "success")
+        return redirect(url_for('reviewer.dashboard'))
 
     return render_template(
-        'reviewer/review_form.html',
-        app=app_obj
+        'reviewer/reviewer.html',
+        application=app_obj,
+        review=review_row,
+        application_data=application_data  
     )
 
 
@@ -145,23 +134,20 @@ def view_review(app_id):
     if current_user.role != 'reviewer':
         abort(403)
 
-    app_obj = Application.query.get_or_404(app_id)
-
     review_row = Review.query.filter_by(
-        application_id=app_obj.id,
+        application_id=app_id,
         reviewer_id=current_user.id
     ).first()
 
     if not review_row:
         flash("This application is not assigned to you.", "danger")
-        return redirect(url_for('reviewer.applications'))
+        return redirect(url_for('reviewer.applications_list'))
 
     return render_template(
         'reviewer/view_review.html',
-        app=app_obj,
+        app=review_row.application,
         review=review_row
     )
-
 
 # =========================
 # RANKING
@@ -172,16 +158,9 @@ def ranking():
     if current_user.role != 'reviewer':
         abort(403)
 
-    apps = (
-        Application.query
-        .join(Review, Review.application_id == Application.id)
-        .filter(Review.reviewer_id == current_user.id)
-        .order_by(Review.score.desc())
-        .distinct()
-        .all()
-    )
+    reviews = Review.query.filter_by(reviewer_id=current_user.id).order_by(Review.score.desc()).all()
 
     return render_template(
         'reviewer/ranking.html',
-        apps=apps
+        reviews=reviews
     )

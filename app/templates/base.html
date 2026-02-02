@@ -9,9 +9,26 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
-    <a class="navbar-brand" href="{% if current_user.is_authenticated %}{{ url_for('student.dashboard') }}{% else %}{{ url_for('auth.login') }}{% endif %}">
+    <a class="navbar-brand" href="
+{% if current_user.is_authenticated %}
+    {% if current_user.role == 'student' %}
+        {{ url_for('student.dashboard') }}
+    {% elif current_user.role == 'reviewer' %}
+        {{ url_for('reviewer.dashboard') }}
+    {% elif current_user.role == 'committee' %}
+        {{ url_for('committee.dashboard') }}
+    {% elif current_user.role == 'admin' %}
+        {{ url_for('admin.dashboard') }}
+    {% else %}
+        {{ url_for('auth.login') }}
+    {% endif %}
+{% else %}
+    {{ url_for('auth.login') }}
+{% endif %}
+">
     Scholarship System
 </a>
+
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>

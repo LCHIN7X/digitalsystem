@@ -19,9 +19,13 @@ def register():
         password1 = request.form.get("password1")
         password2 = request.form.get("password2")
 
+        # Password mismatch
         if password1 != password2:
-            flash("Passwords do not match.", "danger")
-            return render_template("auth/register.html", current_user=current_user)
+            return render_template(
+                "auth/register.html",
+                current_user=current_user,
+                error="Passwords do not match."
+            )
 
         hashed_password = generate_password_hash(password1, method="scrypt")
 
@@ -36,12 +40,18 @@ def register():
         try:
             db.session.add(new_user)
             db.session.commit()
-            flash("Account successfully created! Please login.", "success")
-            return redirect(url_for("auth.login"))
+            return render_template(
+                "auth/register.html",
+                current_user=current_user,
+                success="Account successfully created! Please login."
+            )
         except IntegrityError:
             db.session.rollback()
-            flash("Email, username, or ID already exists.", "danger")
-            return render_template("auth/register.html", current_user=current_user)
+            return render_template(
+                "auth/register.html",
+                current_user=current_user,
+                error="Email, username, or ID already exists."
+            )
 
     return render_template("auth/register.html", current_user=current_user)
 
@@ -72,9 +82,11 @@ def login():
                 return redirect(url_for('admin.dashboard'))
 
             # fallback if role is unexpected
+            
             return redirect(url_for('auth.login'))
 
         flash("Invalid credentials", "danger")
+        return render_template('auth/login.html')
 
     return render_template('auth/login.html')
 
@@ -84,7 +96,7 @@ def login():
 def logout():
     role = current_user.role  # save role BEFORE logout_user()
     logout_user()
-    flash("Logged out", "info")
+    flash("Logged out", "danger")
 
     # admin should go back to /admin/login
     if role == "admin":
