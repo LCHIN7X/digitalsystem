@@ -5,22 +5,68 @@
 <h2>Review: {{ application.scholarship.title }}</h2>
 
 <h4>Student Details</h4>
-<p>Full Name: {{ application.form_data.full_name or application.student.username }}</p>
-<p>Email: {{ application.form_data.email or application.student.email }}</p>
-<p>IC Number: {{ application.form_data.ic_number }}</p>
-<p>DOB: {{ application.form_data.dob }}</p>
-<p>Age: {{ application.form_data.age }}</p>
-<p>Address: {{ application.form_data.address }}</p>
-<p>Intake: {{ application.form_data.intake }}</p>
-<p>Programme: {{ application.form_data.programme }}</p>
-<p>Course: {{ application.form_data.course }}</p>
-<p>Nationality: {{ application.form_data.nationality }}</p>
-<p>Race: {{ application.form_data.race }}</p>
-<p>Sex: {{ application.form_data.sex }}</p>
-<p>Contact: {{ application.form_data.contact }}</p>
-<p>Home Contact: {{ application.form_data.home_contact }}</p>
-<p>Household Income: {{ application.form_data.household_income }}</p>
-
+<table class="table table-bordered">
+    <tr>
+        <th width="20%">Full Name</th>
+        <td>{{ application.form_data.full_name or application.student.username }}</td>
+    </tr>
+    <tr>
+        <th>Email</th>
+        <td>{{ application.form_data.email or application.student.email }}</td>
+    </tr>
+    <tr>
+        <th>IC Number</th>
+        <td>{{ application.form_data.ic_number }}</td>
+    </tr>
+    <tr>
+        <th>Date of Birth</th>
+        <td>{{ application.form_data.dob }}</td>
+    </tr>
+    <tr>
+        <th>Age</th>
+        <td>{{ application.form_data.age }}</td>
+    </tr>
+    <tr>
+        <th>Address</th>
+        <td>{{ application.form_data.address }}</td>
+    </tr>
+    <tr>
+        <th>Intake</th>
+        <td>{{ application.form_data.intake }}</td>
+    </tr>
+    <tr>
+        <th>Programme</th>
+        <td>{{ application.form_data.programme }}</td>
+    </tr>
+    <tr>
+        <th>Course</th>
+        <td>{{ application.form_data.course }}</td>
+    </tr>
+    <tr>
+        <th>Nationality</th>
+        <td>{{ application.form_data.nationality }}</td>
+    </tr>
+    <tr>
+        <th>Race</th>
+        <td>{{ application.form_data.race }}</td>
+    </tr>
+    <tr>
+        <th>Sex</th>
+        <td>{{ application.form_data.sex }}</td>
+    </tr>
+    <tr>
+        <th>Contact</th>
+        <td>{{ application.form_data.contact }}</td>
+    </tr>
+    <tr>
+        <th>Home Contact</th>
+        <td>{{ application.form_data.home_contact }}</td>
+    </tr>
+    <tr>
+        <th>Household Income</th>
+        <td>{{ application.form_data.household_income }}</td>
+    </tr>
+</table>
 <hr>
 
 <h4>Family Details</h4>
@@ -32,13 +78,13 @@
         <th>Occupation</th>
         <th>Income</th>
     </tr>
-    {% for i in range(application_data.family_name|length) %}
+    {% for i in range(application.form_data.family_name|length) %}
     <tr>
-        <td>{{ application_data.family_name[i] }}</td>
-        <td>{{ application_data.relationship[i] }}</td>
-        <td>{{ application_data.family_age[i] }}</td>
-        <td>{{ application_data.occupation[i] }}</td>
-        <td>{{ application_data.family_income[i] }}</td>
+        <td>{{ application.form_data.family_name[i] }}</td>
+        <td>{{ application.form_data.relationship[i] }}</td>
+        <td>{{ application.form_data.family_age[i] }}</td>
+        <td>{{ application.form_data.occupation[i] }}</td>
+        <td>{{ application.form_data.family_income[i] }}</td>
     </tr>
     {% endfor %}
 </table>
@@ -49,22 +95,22 @@
 <table class="table table-bordered">
     <tr>
         <th>School Name</th>
-        <td>{{ application_data.school_name }}</td>
+        <td>{{ application.form_data.school_name }}</td>
     </tr>
     <tr>
         <th>Qualification</th>
-        <td>{{ application_data.qualification }}</td>
+        <td>{{ application.form_data.qualification }}</td>
     </tr>
     <tr>
         <th>Achievements</th>
         <td>
             <ul>
-                {% for i in range(application_data.activity_type|length) %}
+                {% for i in range(application.form_data.activity_type|length) %}
                     <li>
-                        {{ application_data.activity_type[i] }}
-                        - {{ application_data.level[i] }}
-                        - {{ application_data.year[i] }}
-                        - {{ application_data.achievement[i] }}
+                        {{ application.form_data.activity_type[i] }}
+                        - {{ application.form_data.level[i] }}
+                        - {{ application.form_data.year[i] }}
+                        - {{ application.form_data.achievement[i] }}
                     </li>
                 {% endfor %}
             </ul>
@@ -74,8 +120,8 @@
 
 <hr>
 
-<h4>Statement</h4>
-<p>{{ application_data.statement }}</p>
+<h4>Personal Statement</h4>
+<p>{{ application.form_data.statement }}</p>
 
 <hr>
 
@@ -107,6 +153,16 @@
                max="100"
                value="{{ review.score if review else '' }}"
                required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Application Status</label>
+        <select name="status" class="form-select" required>
+            {% set statuses = ['Eligible', 'Rejected', 'Pending'] %}
+            {% for s in statuses %}
+                <option value="{{ s }}" {% if application.status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
     </div>
 
     <div class="mb-3">

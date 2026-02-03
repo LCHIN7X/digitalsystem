@@ -25,8 +25,8 @@ def dashboard():
 
     total = len(reviews)
 
-    # pending means not scored yet (most stable definition)
-    pending = sum(1 for r in reviews if r.score is None)
+    # pending = not decided yet (matches main's "status/decision" workflow)
+    pending = sum(1 for r in reviews if r.decision is None)
     reviewed = total - pending
 
     return render_template(
@@ -74,6 +74,7 @@ def review(app_id):
         reviewer_id=current_user.id
     ).first_or_404()
 
+    # Build data dict for template (avoid crash)
     application_data = {
         "full_name": app_obj.student.username if getattr(app_obj, "student", None) else "",
         "email": app_obj.student.email if getattr(app_obj, "student", None) else "",
@@ -91,6 +92,7 @@ def review(app_id):
         "home_contact": getattr(app_obj, "home_contact", ""),
         "household_income": getattr(app_obj, "household_income", ""),
 
+        # arrays — prevent template crash
         "family_name": [],
         "relationship": [],
         "family_age": [],
@@ -115,15 +117,18 @@ def review(app_id):
         except ValueError:
             review_row.score = None
 
+        # comment
         review_row.comment = request.form.get("comment")
 
-        # decision optional
-        decision_val = request.form.get("decision")
-        if decision_val in ("Pass", "Fail"):
-            review_row.decision = decision_val
-
-        # status: decision if exists, else Reviewed
-        app_obj.status = review_row.decision or "Reviewed"
+        # IMPORTANT: main branch uses form field name "status"
+        # (example values: "Pass"/"Fail"/"Reviewed" etc depending on your form)
+        status_val = request.form.get("status")
+        if status_val:
+            review_row.decision = status_val
+            app_obj.status = status_val
+        else:
+            # fallback if no status provided
+            app_obj.status = "Reviewed"
 
         db.session.commit()
         flash("Review submitted successfully", "success")

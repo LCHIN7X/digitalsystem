@@ -7,7 +7,6 @@
 <!-- Sort buttons -->
 <div class="mb-3">
   <a href="?sort=date" class="btn btn-secondary btn-sm">Sort by Date</a>
-  <a href="?sort=status" class="btn btn-secondary btn-sm">Sort by Status</a>
 </div>
 
 <table class="table">
@@ -15,6 +14,7 @@
         <tr>
             <th>Student</th>
             <th>Scholarship</th>
+            <th>Application Deadline</th>
             <th>Status</th>
             <th>Score</th>
             <th>Action</th>
@@ -25,6 +25,7 @@
         <tr>
             <td>{{ review.application.student.username }}</td>
             <td>{{ review.application.scholarship.title }}</td>
+            <td>{{ review.application.scholarship.application_deadline }}</td>
             <td>{{ review.application.status or "Pending" }}</td>
             <td>{{ review.score or "-" }}</td>
             <td>
