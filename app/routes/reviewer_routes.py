@@ -23,7 +23,7 @@ def dashboard():
 
     total = len(reviews)
     pending = sum(1 for r in reviews if r.decision is None)
-    reviewed = sum(1 for r in reviews if r.decision is not None)
+    reviewed = total - pending
 
     return render_template(
         'reviewer/dashboard.html',
@@ -111,7 +111,9 @@ def review(app_id):
     if request.method == 'POST':
         review_row.score = int(request.form.get('score'))
         review_row.comment = request.form.get('comment')
-        app_obj.status = request.form.get('status')
+        review_row.decision = request.form.get('status')
+
+        app_obj.status = review_row.decision
 
         db.session.commit()
         flash("Review submitted successfully", "success")

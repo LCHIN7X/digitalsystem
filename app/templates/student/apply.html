@@ -90,14 +90,42 @@
     </div>
 
     <div class="mb-3">
-        <label>Household Monthly Income (RM)</label>
-        <input type="number" step="0.01" class="form-control" name="household_income" id="household_income">
-    </div>
+    <label class="form-label">
+        Household Monthly Income (RM)
+    </label>
+    <input type="number" step="0.01" class="form-control" 
+           name="household_income" id="household_income" required>
 
-    <div class="mb-3">
-        <label>Current CGPA</label>
-        <input type="number" step="0.01" min="0" max="4" class="form-control" name="cgpa" id="cgpa">
-    </div>
+    <small class="text-muted">
+        Please upload latest <strong>true copy of income proof</strong> 
+        (salary slip / employer letter / statutory declaration). 
+        <strong>PDF format only.</strong>
+    </small>
+
+    <input type="file" class="form-control mt-2"
+           name="income_proof"
+           accept="application/pdf"
+           required>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">
+        Current CGPA
+    </label>
+    <input type="number" step="0.01" min="0" max="4"
+           class="form-control" name="cgpa" id="cgpa" required>
+
+    <small class="text-muted">
+        Please upload your <strong>latest academic transcript or CGPA statement</strong>.
+        <strong>PDF format only.</strong>
+    </small>
+
+    <input type="file" class="form-control mt-2"
+           name="cgpa_proof"
+           accept="application/pdf"
+           required>
+</div>
+
 
     <div class="mb-3">
         <label>Email Address</label>
@@ -180,6 +208,7 @@
                 <td><input class="form-control" name="activity_type[]"></td>
                 <td>
                     <select class="form-control" name="level[]">
+                        <option>None</option>
                         <option>State</option>
                         <option>National</option>
                         <option>International</option>
