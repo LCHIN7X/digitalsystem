@@ -85,7 +85,6 @@ def apply(scholarship_id):
 
             photo_filename = make_unique_filename(photo.filename)
             photo.save(os.path.join(UPLOAD_FOLDER, photo_filename))
-            # ✅ store relative to /static
             files_to_save.append(f"uploads/{photo_filename}")
 
         # Academic document
@@ -97,8 +96,31 @@ def apply(scholarship_id):
 
             doc_filename = make_unique_filename(academic_doc.filename)
             academic_doc.save(os.path.join(UPLOAD_FOLDER, doc_filename))
-            # ✅ store relative to /static
+          
             files_to_save.append(f"uploads/{doc_filename}")
+
+                # Income proof (PDF only)
+        income_proof = request.files.get('income_proof')
+        if income_proof and income_proof.filename:
+            if not income_proof.filename.lower().endswith('.pdf'):
+                flash("Income proof must be in PDF format.", "danger")
+                return redirect(request.url)
+
+            income_filename = make_unique_filename(income_proof.filename)
+            income_proof.save(os.path.join(UPLOAD_FOLDER, income_filename))
+            files_to_save.append(f"uploads/{income_filename}")
+
+        # CGPA proof (PDF only)
+        cgpa_proof = request.files.get('cgpa_proof')
+        if cgpa_proof and cgpa_proof.filename:
+            if not cgpa_proof.filename.lower().endswith('.pdf'):
+                flash("CGPA proof must be in PDF format.", "danger")
+                return redirect(request.url)
+
+            cgpa_filename = make_unique_filename(cgpa_proof.filename)
+            cgpa_proof.save(os.path.join(UPLOAD_FOLDER, cgpa_filename))
+            files_to_save.append(f"uploads/{cgpa_filename}")
+
 
         # =========================
         # FORM DATA
