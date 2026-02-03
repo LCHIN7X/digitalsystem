@@ -1,7 +1,7 @@
 from app.extensions import db
 from flask_login import UserMixin
 from datetime import datetime
-from sqlalchemy.dialects.postgresql import JSON 
+from sqlalchemy.dialects.postgresql import JSON
 
 
 # =========================
@@ -42,18 +42,16 @@ class Application(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     scholarship_id = db.Column(db.Integer, db.ForeignKey('scholarship.id'), nullable=False)
 
-    # assigned reviewer (optional)
     reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
-    documents = db.Column(db.Text)  # store file paths comma-separated
-    status = db.Column(db.String(50), default="Pending")  # Pending, Reviewed, Accepted, Rejected
+    documents = db.Column(db.Text)
+    status = db.Column(db.String(50), default="Pending")
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # relationships
     reviews = db.relationship('Review', backref='application', lazy=True)
     scholarship = db.relationship('Scholarship', backref='applications')
-
     student = db.relationship('User', foreign_keys=[student_id], backref='applications')
+
     form_data = db.Column(JSON)
 
 
@@ -68,14 +66,12 @@ class Review(db.Model):
     application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
     reviewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # Support both old & new reviewer logic
-    score = db.Column(db.Integer)                 # numeric score
-    decision = db.Column(db.String(20))           # Pass / Fail
+    score = db.Column(db.Integer)
+    decision = db.Column(db.String(20))
     comment = db.Column(db.Text)
 
-    comments = db.Column(db.Text)                 # backward compatibility
+    comments = db.Column(db.Text)
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
-
     reviewed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     reviewer = db.relationship('User', backref='reviews')
