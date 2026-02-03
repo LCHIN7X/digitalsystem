@@ -9,19 +9,24 @@ reviewer_bp = Blueprint(
     template_folder="templates/reviewer"
 )
 
+def reviewer_only():
+    if current_user.role != "reviewer":
+        abort(403)
+
 # =========================
 # DASHBOARD
 # =========================
 @reviewer_bp.route("/dashboard")
 @login_required
 def dashboard():
-    if current_user.role != "reviewer":
-        abort(403)
+    reviewer_only()
 
     reviews = Review.query.filter_by(reviewer_id=current_user.id).all()
 
     total = len(reviews)
-    pending = sum(1 for r in reviews if r.decision is None and r.score is None)
+
+    # pending means not scored yet (most stable definition)
+    pending = sum(1 for r in reviews if r.score is None)
     reviewed = total - pending
 
     return render_template(
@@ -38,18 +43,16 @@ def dashboard():
 @reviewer_bp.route("/applications")
 @login_required
 def applications_list():
-    if current_user.role != "reviewer":
-        abort(403)
+    reviewer_only()
 
     sort = request.args.get("sort")
 
-    # get all reviews with applications
     reviews = Review.query.filter_by(reviewer_id=current_user.id).join(Application).all()
 
     if sort == "date":
         reviews.sort(key=lambda r: r.application.submitted_at, reverse=True)
     elif sort == "status":
-        reviews.sort(key=lambda r: (r.decision or ""), reverse=False)
+        reviews.sort(key=lambda r: (r.decision or ""))
 
     return render_template(
         "reviewer/dashboard.html",
@@ -62,8 +65,7 @@ def applications_list():
 @reviewer_bp.route("/review/<int:app_id>", methods=["GET", "POST"])
 @login_required
 def review(app_id):
-    if current_user.role != "reviewer":
-        abort(403)
+    reviewer_only()
 
     app_obj = Application.query.get_or_404(app_id)
 
@@ -72,10 +74,9 @@ def review(app_id):
         reviewer_id=current_user.id
     ).first_or_404()
 
-    # Build data dict for template (avoid crash)
     application_data = {
-        "full_name": app_obj.student.username if app_obj.student else "",
-        "email": app_obj.student.email if app_obj.student else "",
+        "full_name": app_obj.student.username if getattr(app_obj, "student", None) else "",
+        "email": app_obj.student.email if getattr(app_obj, "student", None) else "",
         "ic_number": getattr(app_obj, "ic_number", ""),
         "dob": getattr(app_obj, "dob", ""),
         "age": getattr(app_obj, "age", ""),
@@ -90,7 +91,6 @@ def review(app_id):
         "home_contact": getattr(app_obj, "home_contact", ""),
         "household_income": getattr(app_obj, "household_income", ""),
 
-        # arrays — prevent template crash
         "family_name": [],
         "relationship": [],
         "family_age": [],
@@ -115,16 +115,15 @@ def review(app_id):
         except ValueError:
             review_row.score = None
 
-        # comment
         review_row.comment = request.form.get("comment")
 
-        # optional decision (only if your form includes it: Pass/Fail)
+        # decision optional
         decision_val = request.form.get("decision")
         if decision_val in ("Pass", "Fail"):
             review_row.decision = decision_val
 
-        # ✅ IMPORTANT: reviewer submission means application is reviewed
-        app_obj.status = "Reviewed"
+        # status: decision if exists, else Reviewed
+        app_obj.status = review_row.decision or "Reviewed"
 
         db.session.commit()
         flash("Review submitted successfully", "success")
@@ -137,15 +136,13 @@ def review(app_id):
         application_data=application_data
     )
 
-
 # =========================
 # VIEW REVIEW
 # =========================
 @reviewer_bp.route("/review/<int:app_id>/view")
 @login_required
 def view_review(app_id):
-    if current_user.role != "reviewer":
-        abort(403)
+    reviewer_only()
 
     review_row = Review.query.filter_by(
         application_id=app_id,
@@ -162,15 +159,13 @@ def view_review(app_id):
         review=review_row
     )
 
-
 # =========================
 # RANKING
 # =========================
 @reviewer_bp.route("/ranking")
 @login_required
 def ranking():
-    if current_user.role != "reviewer":
-        abort(403)
+    reviewer_only()
 
     reviews = Review.query.filter_by(reviewer_id=current_user.id).order_by(Review.score.desc()).all()
 
