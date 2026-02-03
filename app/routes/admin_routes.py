@@ -1,16 +1,15 @@
 from flask import render_template, redirect, url_for, flash, request, Blueprint, Response
 from flask_login import login_required, login_user, current_user
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import func
 
 import csv
 import io
-import json
 
 from app.models import db, Scholarship, User, Application, Review, SystemLog
 from app.forms import (
     ScholarshipForm,
-    RegistrationForm,
+    RegistrationForm,         # kept (even if not used yet)
     AssignReviewersForm,
     ApplicationStatusForm
 )
@@ -18,6 +17,9 @@ from app.forms import (
 admin_bp = Blueprint('admin', __name__)
 
 
+# =========================
+# HELPER: LOG EVENTS
+# =========================
 def log_event(level: str, action: str, message: str, user_id=None):
     try:
         db.session.add(SystemLog(
@@ -31,6 +33,9 @@ def log_event(level: str, action: str, message: str, user_id=None):
         db.session.rollback()
 
 
+# =========================
+# ADMIN LOGIN
+# =========================
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -54,6 +59,9 @@ def admin_login():
     return render_template('admin/login.html')
 
 
+# =========================
+# DASHBOARD
+# =========================
 @admin_bp.route('/dashboard')
 @login_required
 def dashboard():
@@ -107,9 +115,12 @@ def create_scholarship():
         db.session.add(scholarship)
         db.session.commit()
 
-        log_event("info", "CREATE_SCHOLARSHIP",
-                  f"Admin created scholarship: {scholarship.title} (ID {scholarship.id})",
-                  user_id=current_user.id)
+        log_event(
+            "info",
+            "CREATE_SCHOLARSHIP",
+            f"Admin created scholarship: {scholarship.title} (ID {scholarship.id})",
+            user_id=current_user.id
+        )
 
         flash("Scholarship created successfully!", "success")
         return redirect(url_for('admin.manage_scholarships'))
@@ -167,7 +178,6 @@ def scholarship_detail(scholarship_id):
         if criteria.get("required_criteria"):
             eligibility_lines.extend([str(x) for x in criteria.get("required_criteria")])
     elif criteria:
-        # backward compatible: old plain text
         eligibility_lines = [line.strip() for line in str(criteria).split("\n") if line.strip()]
 
     return render_template(
@@ -202,7 +212,6 @@ def edit_scholarship(scholarship_id):
             except Exception:
                 pass
 
-        # eligibility_criteria (dict) -> put back to fields if exist
         criteria = scholarship.eligibility_criteria
         if isinstance(criteria, dict):
             if "min_cgpa" in criteria:
@@ -241,9 +250,12 @@ def edit_scholarship(scholarship_id):
 
         db.session.commit()
 
-        log_event("info", "EDIT_SCHOLARSHIP",
-                  f"Admin edited scholarship: {scholarship.title} (ID {scholarship.id})",
-                  user_id=current_user.id)
+        log_event(
+            "info",
+            "EDIT_SCHOLARSHIP",
+            f"Admin edited scholarship: {scholarship.title} (ID {scholarship.id})",
+            user_id=current_user.id
+        )
 
         flash("Scholarship updated successfully!", "success")
         return redirect(url_for('admin.scholarship_detail', scholarship_id=scholarship.id))
@@ -252,17 +264,140 @@ def edit_scholarship(scholarship_id):
 
 
 # =========================
-# MANAGE USERS
+# MANAGE USERS (CREATE + LIST)
 # =========================
-@admin_bp.route('/manage_users')
+@admin_bp.route('/manage_users', methods=['GET', 'POST'])
 @login_required
 def manage_users():
     if current_user.role != 'admin':
         flash("Access denied.", "danger")
         return redirect(url_for('auth.login'))
 
-    users = User.query.all()
+    # CREATE USER (POST)
+    if request.method == 'POST':
+        action = request.form.get("action", "").strip()
+
+        if action == "create_user":
+            username = request.form.get("username", "").strip()
+            email = request.form.get("email", "").strip()
+            role = request.form.get("role", "").strip()
+            password = request.form.get("password", "").strip()
+
+            if not username or not email or not role or not password:
+                flash("Please fill in all fields.", "danger")
+                return redirect(url_for('admin.manage_users'))
+
+            if User.query.filter_by(username=username).first():
+                flash("Username already exists.", "danger")
+                return redirect(url_for('admin.manage_users'))
+
+            if User.query.filter_by(email=email).first():
+                flash("Email already exists.", "danger")
+                return redirect(url_for('admin.manage_users'))
+
+            new_user = User(
+                username=username,
+                email=email,
+                role=role,
+                password=generate_password_hash(password)
+            )
+            db.session.add(new_user)
+            db.session.commit()
+
+            log_event(
+                "info",
+                "CREATE_USER",
+                f"Admin created user: {username} ({role})",
+                user_id=current_user.id
+            )
+
+            flash("User created successfully.", "success")
+            return redirect(url_for('admin.manage_users'))
+
+        flash("Invalid action.", "danger")
+        return redirect(url_for('admin.manage_users'))
+
+    # LIST USERS (GET)
+    users = User.query.order_by(User.id.asc()).all()
     return render_template('admin/manage_users.html', users=users)
+
+
+@admin_bp.route('/manage_users/<int:user_id>/edit', methods=['POST'])
+@login_required
+def edit_user(user_id):
+    """
+    ✅ Email is NOT editable.
+    Admin can only edit: username, role, optional password reset.
+    """
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('auth.login'))
+
+    user = User.query.get_or_404(user_id)
+
+    username = request.form.get("username", "").strip()
+    role = request.form.get("role", "").strip()
+    new_password = request.form.get("password", "").strip()
+
+    if not username or not role:
+        flash("Username and role are required.", "danger")
+        return redirect(url_for("admin.manage_users"))
+
+    if User.query.filter(User.username == username, User.id != user.id).first():
+        flash("Username already used by another user.", "danger")
+        return redirect(url_for("admin.manage_users"))
+
+    user.username = username
+    user.role = role
+
+    # Optional password reset
+    if new_password:
+        user.password = generate_password_hash(new_password)
+
+    db.session.commit()
+
+    log_event(
+        "info",
+        "EDIT_USER",
+        f"Admin edited user ID {user.id}: {username} ({role})",
+        user_id=current_user.id
+    )
+
+    flash("User updated successfully.", "success")
+    return redirect(url_for("admin.manage_users"))
+
+
+@admin_bp.route('/manage_users/<int:user_id>/delete', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('auth.login'))
+
+    user = User.query.get_or_404(user_id)
+
+    # Safety: do not delete yourself
+    if user.id == current_user.id:
+        flash("You cannot delete your own admin account.", "danger")
+        return redirect(url_for("admin.manage_users"))
+
+    try:
+        db.session.delete(user)
+        db.session.commit()
+
+        log_event(
+            "warning",
+            "DELETE_USER",
+            f"Admin deleted user ID {user.id}: {user.username} ({user.role})",
+            user_id=current_user.id
+        )
+
+        flash("User deleted successfully.", "success")
+    except Exception:
+        db.session.rollback()
+        flash("Delete failed. This user may be linked to applications/reviews.", "danger")
+
+    return redirect(url_for("admin.manage_users"))
 
 
 # =========================
@@ -286,7 +421,6 @@ def manage_applications():
     return render_template('admin/manage_applications.html', applications=applications, forms=forms)
 
 
-# ✅✅✅ 这个就是你缺少的 route：admin.application_detail
 @admin_bp.route('/applications/<int:application_id>')
 @login_required
 def application_detail(application_id):
@@ -366,7 +500,7 @@ def assign_reviewers(application_id):
 
 
 # =========================
-# REPORTS
+# REPORTS (FIXED role_counts)
 # =========================
 @admin_bp.route("/reports")
 @login_required
@@ -386,12 +520,20 @@ def reports():
     )
     status_counts = {status or "Unknown": count for status, count in status_rows}
 
+    role_rows = (
+        db.session.query(User.role, func.count(User.id))
+        .group_by(User.role)
+        .all()
+    )
+    role_counts = {role or "Unknown": count for role, count in role_rows}
+
     return render_template(
         "admin/reports.html",
         total_users=total_users,
         total_scholarships=total_scholarships,
         total_apps=total_apps,
-        status_counts=status_counts
+        status_counts=status_counts,
+        role_counts=role_counts
     )
 
 
@@ -433,4 +575,27 @@ def system_logs():
         return redirect(url_for("auth.login"))
 
     logs = SystemLog.query.order_by(SystemLog.created_at.desc()).limit(200).all()
-    return render_template("admin/system_logs.html", logs=logs)
+    return render_template("admin/logs.html", logs=logs)
+
+# =========================
+# CLEAR LOGS
+# =========================
+@admin_bp.route("/logs/clear", methods=["POST"])
+@login_required
+def clear_logs():
+    if current_user.role != "admin":
+        flash("Access denied.", "danger")
+        return redirect(url_for("auth.login"))
+
+    try:
+        deleted = db.session.query(SystemLog).delete()
+        db.session.commit()
+        flash(f"Cleared {deleted} logs.", "success")
+
+        log_event("warning", "CLEAR_LOGS", f"Admin cleared {deleted} logs.", user_id=current_user.id)
+
+    except Exception:
+        db.session.rollback()
+        flash("Failed to clear logs.", "danger")
+
+    return redirect(url_for("admin.system_logs"))
